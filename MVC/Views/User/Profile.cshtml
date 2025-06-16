@@ -1,0 +1,153 @@
+@model ProfileViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Information Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header text-white">
+                    <h4 class="card-title mb-0">Your Profile</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <img src="@Url.Content($"~/assets/profile_pictures/{Model.ProfilePicture}")" alt="Profile Picture" 
+                             class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                    </div>
+                    <h5 class="mb-2">@Model.UserName</h5>
+                    <p class="text-muted mb-2">@Model.Email</p>
+                    
+                    <!-- Display user titles -->
+                    @if (Model.Titles.Any())
+                    {
+                        <hr />
+                        <h6 class="mb-2">Achievements</h6>
+                        <div class="user-titles">
+                            @foreach (var title in Model.Titles)
+                            {
+                                <span class="badge bg-primary me-1 mb-1">@title.Title</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Card -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-white">
+                    <h4 class="card-title mb-0">Edit Profile</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+                    
+                    <form asp-action="UpdateProfile" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control bg-dark text-white" disabled />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="NewUserName" class="form-label">Username</label>
+                            <input asp-for="NewUserName" class="form-control" />
+                            <span asp-validation-for="NewUserName" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label d-block">Profile Picture</label>
+                            <div class="row g-3" id="profile-pictures-container">
+                                @foreach (var picture in Model.AvailableProfilePictures)
+                                {
+                                    <div class="col-4 col-md-3 col-lg-2">
+                                        <div class="profile-picture-option @(Model.ProfilePicture == picture ? "selected" : "")" 
+                                             data-picture="@picture" onclick="selectProfilePicture(this)">
+                                            <img src="@Url.Content($"~/assets/profile_pictures/{picture}")" 
+                                                 alt="Profile option" class="img-fluid rounded-circle">
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <input type="hidden" asp-for="NewProfilePicture" id="selected-profile-picture" 
+                                   value="@Model.ProfilePicture" />
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .profile-picture-option {
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .profile-picture-option:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        
+        .profile-picture-option.selected {
+            border: 3px solid #0d6efd;
+            padding: 0;
+        }
+        
+        .user-titles {
+            margin-top: 10px;
+        }
+        
+        .user-titles .badge {
+            font-size: 0.85rem;
+            padding: 0.5em 0.8em;
+        }
+    </style>
+}
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        function selectProfilePicture(element) {
+            // Remove selected class from all options
+            document.querySelectorAll('.profile-picture-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Add selected class to the clicked option
+            element.classList.add('selected');
+            
+            // Update the hidden input value
+            document.getElementById('selected-profile-picture').value = element.dataset.picture;
+        }
+        
+        // Initialize with the saved profile picture
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedPicture = '@Model.ProfilePicture';
+            const element = document.querySelector(`.profile-picture-option[data-picture="${savedPicture}"]`);
+            if (element) {
+                element.classList.add('selected');
+            }
+        });
+    </script>
+}

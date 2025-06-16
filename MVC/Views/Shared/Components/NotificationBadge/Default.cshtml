@@ -1,0 +1,9 @@
+@model NotificationBadgeViewModel
+
+@if (Model.UnreadCount > 0)
+{
+    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        @(Model.UnreadCount > 99 ? "99+" : Model.UnreadCount.ToString())
+        <span class="visually-hidden">unread notifications</span>
+    </span>
+}

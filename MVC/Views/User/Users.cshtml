@@ -1,0 +1,317 @@
+@model UsersViewModel
+
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8"> <!-- Matches Topics page width -->
+            <div class="card">
+                <div class="card-header text-white" style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <h2 class="h4 mb-0 me-3">User Management</h2>
+                        </div>
+                        <div class="d-flex">
+                            <form asp-action="Users" method="get" class="me-2">
+                                <div class="input-group">
+                                    <input type="text" name="searchTerm" value="@Model.CurrentFilter" 
+                                           class="form-control bg-dark text-light border-secondary" 
+                                           placeholder="Search users...">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                    @if (!string.IsNullOrEmpty(Model.CurrentFilter))
+                                    {
+                                        <a asp-action="Users" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </form>
+                            <div class="btn-group">
+                                <a asp-action="Users" asp-route-filter="all" asp-route-searchTerm="@Model.CurrentFilter"
+                                   class="btn @(Model.StatusFilter == "all" ? "btn-primary" : "btn-outline-primary")">
+                                    All
+                                </a>
+                                <a asp-action="Users" asp-route-filter="active" asp-route-searchTerm="@Model.CurrentFilter"
+                                   class="btn @(Model.StatusFilter == "active" ? "btn-primary" : "btn-outline-primary")">
+                                    Active
+                                </a>
+                                <a asp-action="Users" asp-route-filter="banned" asp-route-searchTerm="@Model.CurrentFilter"
+                                   class="btn @(Model.StatusFilter == "banned" ? "btn-primary" : "btn-outline-primary")">
+                                    Banned
+                                </a>
+                            </div>
+                            <div class="d-flex align-items-center" style="padding-left: 5px;">
+                                <span class="badge bg-light text-primary">@Model.TotalUsers users</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40%">
+                                        <a asp-action="Users" asp-route-sortOrder="@Model.UsernameSortParam"
+                                           asp-route-filter="@Model.StatusFilter"
+                                           asp-route-searchTerm="@Model.CurrentFilter"
+                                           class="text-decoration-none text-primary fw-bold d-flex align-items-center">
+                                            Username
+                                            @if (!string.IsNullOrEmpty(Model.SortOrder) && Model.SortOrder.Contains("username"))
+                                            {
+                                                <i class="bi @(Model.SortOrder == "username_desc" ? "bi-arrow-down" : "bi-arrow-up") ms-1"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th style="width: 20%" class="text-center">
+                                        <a asp-action="Users" asp-route-sortOrder="@Model.DateSortParam"
+                                           asp-route-filter="@Model.StatusFilter"
+                                           asp-route-searchTerm="@Model.CurrentFilter"
+                                           class="text-decoration-none text-primary fw-bold d-flex align-items-center justify-content-center">
+                                            Joined
+                                            @if (!string.IsNullOrEmpty(Model.SortOrder) && Model.SortOrder.Contains("date"))
+                                            {
+                                                <i class="bi @(Model.SortOrder == "date_desc" ? "bi-arrow-down" : "bi-arrow-up") ms-1"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th style="width: 20%" class="text-center">
+                                        <span class="text-primary fw-bold">Status</span>
+                                    </th>
+                                    <th style="width: 20%" class="text-center">
+                                        <span class="text-primary fw-bold">Actions</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Users.Any())
+                                {
+                                    @foreach (var user in Model.Users)
+                                    {
+                                        <tr class="@(user.BannedTo.HasValue && user.BannedTo > DateTime.UtcNow ? "banned-user-row" : "")">
+                                            <td class="align-middle">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="user-avatar me-2">
+                                                        <img src="~/assets/profile_pictures/@user.ProfilePicture" alt="User Avatar"
+                                                             class="rounded-circle" alt="Profile" width="32" height="32">
+                                                    </div>
+                                                    <div>
+                                                        <div>@user.UserName</div>
+                                                        <small class="text-muted">@user.Email</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <small>@(user.CreatedAt.ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "N/A")</small>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                @if (user.BannedTo.HasValue)
+                                                {
+                                                    @if (user.BannedTo > DateTime.UtcNow)
+                                                    {
+                                                        <span class="badge bg-warning text-dark">Banned until @user.BannedTo.Value.ToString("MMM dd, yyyy")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success">Active (was banned to: @user.BannedTo.Value.ToString("MMM dd, yyyy"))</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success">Active</span>
+                                                }
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                        Actions
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        @if (!user.BannedTo.HasValue || user.BannedTo < DateTime.UtcNow)
+                                                        {
+                                                            <li>
+                                                                <form asp-action="Ban" asp-controller="User" method="post">
+                                                                    <input type="hidden" name="email" value="@user.UserName" />
+                                                                    <button type="submit" class="dropdown-item text-warning">
+                                                                        <i class="bi bi-slash-circle me-1"></i> Ban User
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        }
+                                                        else
+                                                        {
+                                                            <li>
+                                                                <form asp-action="UnbanUser" asp-controller="User" method="post">
+                                                                    <input type="hidden" name="email" value="@user.UserName" />
+                                                                    <button type="submit" class="dropdown-item text-success">
+                                                                        <i class="bi bi-check-circle me-1"></i> Unban User
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        }
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item text-danger delete-btn"
+                                                                    data-email="@user.UserName">
+                                                                <i class="bi bi-trash me-1"></i> Delete User
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                                                <p class="mt-2 mb-0">No users found matching your criteria</p>
+                                                <a asp-action="Users" class="btn btn-sm btn-outline-primary mt-3">Clear filters</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-action="Users"
+                                       asp-route-page="1"
+                                       asp-route-sortOrder="@Model.SortOrder"
+                                       asp-route-filter="@Model.StatusFilter"
+                                       asp-route-searchTerm="@Model.CurrentFilter">First</a>
+                                </li>
+                                <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-action="Users"
+                                       asp-route-page="@(Model.CurrentPage - 1)"
+                                       asp-route-sortOrder="@Model.SortOrder"
+                                       asp-route-filter="@Model.StatusFilter"
+                                       asp-route-searchTerm="@Model.CurrentFilter">&laquo;</a>
+                                </li>
+
+                                @{
+                                    int startPage = Math.Max(1, Model.CurrentPage - 2);
+                                    int endPage = Math.Min(startPage + 4, Model.TotalPages);
+
+                                    if (endPage - startPage < 4)
+                                    {
+                                        startPage = Math.Max(1, endPage - 4);
+                                    }
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-action="Users"
+                                           asp-route-page="@i"
+                                           asp-route-sortOrder="@Model.SortOrder"
+                                           asp-route-filter="@Model.StatusFilter"
+                                           asp-route-searchTerm="@Model.CurrentFilter">@i</a>
+                                    </li>
+                                }
+
+                                <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-action="Users"
+                                       asp-route-page="@(Model.CurrentPage + 1)"
+                                       asp-route-sortOrder="@Model.SortOrder"
+                                       asp-route-filter="@Model.StatusFilter"
+                                       asp-route-searchTerm="@Model.CurrentFilter">&raquo;</a>
+                                </li>
+                                <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-action="Users"
+                                       asp-route-page="@Model.TotalPages"
+                                       asp-route-sortOrder="@Model.SortOrder"
+                                       asp-route-filter="@Model.StatusFilter"
+                                       asp-route-searchTerm="@Model.CurrentFilter">Last</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title" id="deleteUserModalLabel">Delete User Account</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <p class="text-center">Are you sure you want to delete the account for <strong><span id="userEmailToDelete"></span></strong>?</p>
+                <p class="text-danger text-center"><small>This will permanently remove all user data and cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" asp-action="DeleteUser" method="post">
+                    <input type="hidden" id="deleteUserEmail" name="email" value="" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i> Delete Permanently
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Delete user confirmation
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const userEmailToDelete = document.getElementById('userEmailToDelete');
+        const deleteUserEmail = document.getElementById('deleteUserEmail');
+        const deleteUserModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const email = this.getAttribute('data-email');
+
+                userEmailToDelete.textContent = email;
+                deleteUserEmail.value = email;
+
+                deleteUserModal.show();
+            });
+        });
+    </script>
+
+    <style>
+        .banned-user-row {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+
+            .banned-user-row td {
+                color: #664d03;
+            }
+
+            .banned-user-row small {
+                color: #997404 !important;
+            }
+    </style>
+}

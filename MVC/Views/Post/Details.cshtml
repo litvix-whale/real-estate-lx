@@ -1,0 +1,920 @@
+﻿@using System.Security.Claims
+@using Core.Interfaces
+@inject ITopicService topicService
+@model PostDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Post.Title;
+    const int characterLimit = 200;
+    bool isLongText = Model.Post.Text != null && Model.Post.Text.Length > characterLimit;
+    string previewText = isLongText ? Model.Post.Text!.Substring(0, characterLimit) + "..." : Model.Post.Text!;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <!-- Post Details -->
+            <div class="card mb-4">
+                <div class="card-header text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="h4 mb-0">@Model.Post.Title</h2>
+
+                            <span class="badge bg-secondary">
+                            @{
+                                var topicName = "No Topic";
+                                if (Model.Post.TopicId.HasValue)
+                                {
+                                    var topicId = Model.Post.TopicId;
+                                    var topic = topicId.HasValue ? await topicService.GetByIdAsync(topicId.Value) : null;
+                                    if (topic != null && !string.IsNullOrWhiteSpace(topic.Name))
+                                    {
+                                        topicName = topic.Name;
+                                    }
+                                }
+                            }
+                            @topicName
+                            </span>
+                        </div>
+                    </span>
+
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                            if (User.IsInRole("Admin") || userId == Model.Post.UserId.ToString())
+                            {
+                                <button type="button" class="border-0 bg-transparent p-2 text-danger delete-btn"
+                                        data-post-title="@Model.Post.Title" data-bs-toggle="modal" data-bs-target="#deletePostModal">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column ">
+                            @if (User.Identity != null && User.Identity.IsAuthenticated && ViewBag.BannedTo == null)
+                            {
+                                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                                bool hasPostUpvoted = Model.UserPostVote == "up";
+                                bool hasPostDownvoted = Model.UserPostVote == "down";
+                                
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-sm btn-link p-1 vote-post-btn upvote-post-btn @(hasPostUpvoted ? "active" : "")" 
+                                            data-post-id="@Model.Post.Id" 
+                                            data-vote-type="up"
+                                            data-user-id="@userId">
+                                        <i class="bi bi-arrow-up-circle-fill fs-4 @(hasPostUpvoted ? "text-success" : "")"></i>
+                                    </button>
+                                    
+                                    <span class="vote-post-score fw-bold mx-2">@(Model.Post.Rating)</span>
+                                    
+                                    <button class="btn btn-sm btn-link p-1 vote-post-btn downvote-post-btn @(hasPostDownvoted ? "active" : "")" 
+                                            data-post-id="@Model.Post.Id" 
+                                            data-vote-type="down"
+                                            data-user-id="@userId">
+                                        <i class="bi bi-arrow-down-circle-fill fs-4 @(hasPostDownvoted ? "text-danger" : "")"></i>
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center margin-top-20">
+                                    <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-link p-1"
+                                       style="transition: transform 0.15s ease;"
+                                       onmouseover="this.style.transform='scale(1.2)'" 
+                                       onmouseout="this.style.transform='scale(1)'">
+                                        <i class="bi bi-arrow-up-circle-fill text-muted fs-4"></i>
+                                    </a>
+                                    <span class="vote-post-score fw-bold mx-2">@(Model.Post.Rating)</span>
+                                    <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-link p-1"
+                                       style="transition: transform 0.15s ease;"
+                                       onmouseover="this.style.transform='scale(1.2)'" 
+                                       onmouseout="this.style.transform='scale(1)'">
+                                        <i class="bi bi-arrow-down-circle-fill text-muted fs-4"></i>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                        <div class="d-flex align-items-center mt-2">
+                            @{
+                                var postAuthorName = Model.Post.UserId.HasValue && Model.UserNames.ContainsKey(Model.Post.UserId.Value)
+                                ? Model.UserNames[Model.Post.UserId.Value]
+                                : "Unknown User";
+
+                                var profilePicture = Model.Post.UserId.HasValue && Model.UserProfilePictures.ContainsKey(Model.Post.UserId.Value)
+                                ? Model.UserProfilePictures[Model.Post.UserId.Value]
+                                : "pfp_1.png";
+                            }
+                            <img src="~/assets/profile_pictures/@profilePicture" alt="User Avatar" 
+                                                            class="rounded-circle me-2" width="30" height="30" />
+                            <div class="author-info">
+                                <span class="fw-bold">@postAuthorName</span>
+                                @if (Model.UserTitles.ContainsKey(Model.Post.UserId ?? Guid.Empty) && Model.UserTitles[Model.Post.UserId ?? Guid.Empty].Any())
+                                {
+                                    foreach (var title in Model.UserTitles[Model.Post.UserId ?? Guid.Empty])
+                                    {
+                                        <span class="user-title badge bg-info ms-1 @title.ToLower().Replace(" ", "-")">@title</span>
+                                    }
+                                }
+                                <span class="text-muted ms-2">@Model.Post.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    @if (isLongText)
+                    {
+                        <div class="post-content">
+                            <p class="post-preview">@previewText</p>
+                            <div class="post-full-content d-none">
+                                <p>@Model.Post.Text</p>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary toggle-post-content">
+                                <span class="read-more-text">Read more</span>
+                                <span class="read-less-text d-none">Read less</span>
+                                <i class="bi bi-chevron-down read-more-icon"></i>
+                                <i class="bi bi-chevron-up read-less-icon d-none"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        
+                        <p class="mt-4 margin-top-8">@Model.Post.Text</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Post.FileName))
+                    {
+                        <div class="mt-3">
+                            @if (!string.IsNullOrEmpty(Model.Post.FileType) && Model.Post.FileType.StartsWith("image/"))
+                            {
+                                <img src="@Url.Action("ViewImage", "Post", new { postId = Model.Post.Id })" 
+                                    class="img-fluid mb-2" 
+                                    alt="Post image" 
+                                    style="max-height: 300px;" />
+                                <br />
+                            }
+                            <a asp-controller="Post" asp-action="DownloadFile" asp-route-postId="@Model.Post.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-download"></i> Download (@Model.Post.FileName)
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="h5 mb-0">Comments (@Model.Comments.Count)</h3>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Comment Input -->
+                    @if (User.Identity != null && User.Identity.IsAuthenticated && ViewBag.BannedTo == null)
+                    {
+                        <div class="comment-input-container mb-4">
+                            <form asp-controller="Comment" asp-action="Add" method="post" enctype="multipart/form-data" id="inlineCommentForm" class="d-flex align-items-center">
+                                <input type="text" name="text" id="commentTextField" placeholder="Add a comment" class="form-control bg-transparent border-0 text-light">
+                                <input type="hidden" name="postId" value="@Model.Post.Id" />
+                                <input type="hidden" name="userId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+                                
+                                <div class="d-flex">
+                                    <label for="inlineCommentFile" class="btn btn-link text-light p-2">
+                                        <i class="bi bi-image align-middle" style="position: relative; top: 2px;"></i>
+                                    </label>
+                                    <input id="inlineCommentFile" name="file" type="file" class="d-none">
+                                    
+                                    <button type="button" class="btn btn-link text-light p-2" id="emojiButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-emoji-smile"></i>
+                                    </button>
+                                    <div class="dropdown-menu p-2 bg-dark" id="emojiPicker" style="width: 300px;">
+                                        <div class="emoji-container d-flex flex-wrap justify-content-center">
+                                            <!-- Common emojis -->
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😀</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😃</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😄</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😁</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😆</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😅</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😂</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">🤣</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">❤️</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">👍</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">👎</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">👌</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">✅</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">👏</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">🎉</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">🙏</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">🔥</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">⭐</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">💯</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">💪</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">🤔</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😊</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😎</button>
+                                            <button type="button" class="emoji-btn btn btn-link p-1">😍</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn text-light rounded-pill px-3 ms-2">Comment</button>
+                                </div>
+                            </form>
+                        </div>
+                    }
+                    else if (User.Identity != null && User.Identity.IsAuthenticated && ViewBag.BannedTo != null)
+                    {
+                        <div class="comment-input-container mb-4 rounded-pill p-2 ps-3 bg-dark text-light">
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted">
+                                    You are banned until @ViewBag.BannedTo.
+                                </span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="comment-input-container mb-4 rounded-pill p-2 ps-3 bg-dark text-light">
+                            <div class="d-flex align-items-center">
+                                <span class="text-muted">Add a comment</span>
+                                <a asp-controller="User" asp-action="Register" class="btn text-light rounded-pill px-3 ms-auto">Sign in</a>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Comments Sort Controls -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="dropdown me-3">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>Sort by: </span><span class="fw-bold" id="currentSortMethod">Best</span>
+                            </button>
+                            <ul class="dropdown-menu bg-dark" aria-labelledby="sortDropdown">
+                                <li><a class="dropdown-item text-light sort-option" href="#" data-sort="best">Best</a></li>
+                                <li><a class="dropdown-item text-light sort-option" href="#" data-sort="newest">Newest</a></li>
+                                <li><a class="dropdown-item text-light sort-option" href="#" data-sort="oldest">Oldest</a></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="search-container position-relative flex-grow-1">
+                            <i class="bi bi-search position-absolute start-0 top-50 translate-middle-y ms-3 text-muted"></i>
+                            <input type="text" id="commentSearchInput" class="form-control bg-dark text-light border-secondary rounded-pill ps-5" placeholder="Search Comments">
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div id="commentsContainer">
+                        @if (Model.Comments.Any())
+                        {
+                            @foreach (var comment in Model.Comments)
+                            {
+                                <div class="comment border-top pt-3 mt-3" 
+                                     data-comment-text="@comment.Text.ToLower()" 
+                                     data-comment-date="@comment.CreatedAt.Ticks" 
+                                     data-comment-score="@(comment.UpVotes - comment.DownVotes)">
+                                    <div class="d-flex">
+                                        <!-- Voting System -->
+                                        <div class="d-flex flex-column align-items-center me-3 comment-votes">
+                                            @if (User.Identity != null && User.Identity.IsAuthenticated && ViewBag.BannedTo == null)
+                                            {
+                                                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                                                bool hasUpvoted = Model.UserVotes.ContainsKey(comment.Id) && Model.UserVotes[comment.Id] == "up";
+                                                bool hasDownvoted = Model.UserVotes.ContainsKey(comment.Id) && Model.UserVotes[comment.Id] == "down";
+                                                
+                                                <button class="btn btn-sm btn-link p-0 vote-btn upvote-btn @(hasUpvoted ? "active" : "")" 
+                                                        data-comment-id="@comment.Id" 
+                                                        data-vote-type="up"
+                                                        data-user-id="@userId">
+                                                    <i class="bi bi-arrow-up-circle fs-4 @(hasUpvoted ? "text-success" : "")"></i>
+                                                </button>
+                                                
+                                                <span class="vote-score fw-bold my-1">@(comment.UpVotes - comment.DownVotes)</span>
+                                                
+                                                <button class="btn btn-sm btn-link p-0 vote-btn downvote-btn @(hasDownvoted ? "active" : "")" 
+                                                        data-comment-id="@comment.Id" 
+                                                        data-vote-type="down"
+                                                        data-user-id="@userId">
+                                                    <i class="bi bi-arrow-down-circle fs-4 @(hasDownvoted ? "text-danger" : "")"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-link p-0"
+                                                style="transition: transform 0.15s ease;"
+                                                onmouseover="this.style.transform='scale(1.2)'" 
+                                                onmouseout="this.style.transform='scale(1)'">
+                                                    <i class="bi bi-arrow-up-circle text-muted fs-4"></i>
+                                                </a>
+                                                <span class="vote-score fw-bold my-1">@(comment.UpVotes - comment.DownVotes)</span>
+                                                <a asp-controller="User" asp-action="Login" class="btn btn-sm btn-link p-0"
+                                                style="transition: transform 0.15s ease;"
+                                                onmouseover="this.style.transform='scale(1.2)'" 
+                                                onmouseout="this.style.transform='scale(1)'">
+                                                    <i class="bi bi-arrow-down-circle text-muted fs-4"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                        
+                                        <!-- Comment content -->
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <div class="d-flex align-items-center">
+                                                    <img src="~/assets/profile_pictures/@Model.UserProfilePictures[comment.UserId]" alt="User Avatar"
+                                                         class="rounded-circle me-2" width="30" height="30" />
+                                                    <div>
+                                                        <span class="fw-bold">@Model.UserNames[comment.UserId]</span>
+                                                        @if (Model.UserTitles.ContainsKey(comment.UserId) && Model.UserTitles[comment.UserId].Any())
+                                                        {
+                                                            foreach (var title in Model.UserTitles[comment.UserId])
+                                                            {
+                                                                <span class="user-title badge bg-info ms-1 @title.ToLower().Replace(" ", "-")">@title</span>
+                                                            }
+                                                        }
+                                                        <span class="text-muted ms-2">@comment.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                                    </div>
+                                                </div>
+
+                                                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                                                {
+                                                    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                                                    if (User.IsInRole("Admin") || userId == comment.UserId.ToString())
+                                                    {
+                                                        <button type="button" class="border-0 bg-transparent p-2 text-danger delete-comment-btn"
+                                                                style="margin: -8px; transition: transform 0.15s ease;"
+                                                                onmouseover="this.style.transform='scale(1.2)'" 
+                                                                onmouseout="this.style.transform='scale(1)'"
+                                                                data-comment-id="@comment.Id"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#deleteCommentModal">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                }
+                                            </div>
+                                            <p class="mt-2">@comment.Text</p>
+
+                                            @if (!string.IsNullOrEmpty(comment.FileName))
+                                            {
+                                                <div>
+                                                    <a asp-controller="Post" asp-action="DownloadFileComment" asp-route-commentId="@comment.Id" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                        <i class="bi bi-file-earmark"></i> Download file (@comment.FileName)
+                                                    </a>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-center text-muted my-4" id="noCommentsMessage">We do not have any comments yet. Be first!</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a asp-controller="Post" asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to posts
+                </a>
+            </div>
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <div class="mt-4 mb-4">
+                    @if (ViewBag.IsSubscribed ?? false)
+                    {
+                        <form asp-controller="Post" asp-action="Unsubscribe" method="post" class="d-inline">
+                            <input type="hidden" name="title" value="@Model.Post.Title" />
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-bell-slash me-2"></i>Unsubscribe from updates
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-controller="Post" asp-action="Subscribe" method="post" class="d-inline">
+                            <input type="hidden" name="title" value="@Model.Post.Title" />
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="bi bi-bell me-2"></i>Subscribe to updates
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Post Modal -->
+<div class="modal fade" id="deletePostModal" tabindex="-1" aria-labelledby="deletePostModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header bg-danger border-bottom border-secondary">
+                <h5 class="modal-title text-white" id="deletePostModalLabel">Delete post</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-dark">
+                <p>Are you sure you want to delete this post "<span id="deletePostTitle"></span>"?</p>
+                <p class="text-danger mb-0"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer bg-dark border-top border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deletePostForm" asp-controller="Post" asp-action="Delete" method="post">
+                    <input type="hidden" name="title" value="@Model.Post.Title" />
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Comment Modal -->
+<div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-labelledby="deleteCommentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header bg-danger border-bottom border-secondary">
+                <h5 class="modal-title text-white" id="deleteCommentModalLabel">Delete comment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-dark">
+                <p>Are you sure you want to delete this comment?</p>
+                <p class="text-danger mb-0"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer bg-dark border-top border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteCommentForm" asp-controller="Comment" asp-action="Delete" method="post">
+                    <input type="hidden" id="deleteCommentId" name="commentId" value="" />
+                    <input type="hidden" name="postId" value="@Model.Post.Id" />
+                    <input type="hidden" name="userId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle post voting
+            document.querySelectorAll('.vote-btn[data-post-id]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const postId = this.getAttribute('data-post-id');
+                    const userId = this.getAttribute('data-user-id');
+                    const voteType = this.getAttribute('data-vote-type');
+                    const scoreElement = this.closest('.d-flex').querySelector('.vote-score');
+                    
+                    const upvoteBtn = this.closest('.d-flex').querySelector('.upvote-btn');
+                    const downvoteBtn = this.closest('.d-flex').querySelector('.downvote-btn');
+                    
+                    if (voteType === 'up') {
+                        if (this.classList.contains('active')) {
+                            this.classList.remove('active');
+                            this.querySelector('i').classList.remove('text-success');
+                        } else {
+                            this.classList.add('active');
+                            this.querySelector('i').classList.add('text-success');
+                            
+                            if (downvoteBtn && downvoteBtn.classList.contains('active')) {
+                                downvoteBtn.classList.remove('active');
+                                downvoteBtn.querySelector('i').classList.remove('text-danger');
+                            }
+                        }
+                    } else {
+                        if (this.classList.contains('active')) {
+                            this.classList.remove('active');
+                            this.querySelector('i').classList.remove('text-danger');
+                        } else {
+                            this.classList.add('active');
+                            this.querySelector('i').classList.add('text-danger');
+                            
+                            if (upvoteBtn && upvoteBtn.classList.contains('active')) {
+                                upvoteBtn.classList.remove('active');
+                                upvoteBtn.querySelector('i').classList.remove('text-success');
+                            }
+                        }
+                    }
+                    
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]') ? 
+                                document.querySelector('input[name="__RequestVerificationToken"]').value : null;
+                    
+                    if (!token) {
+                        console.error('CSRF token not found');
+                        return;
+                    }
+                    
+                    fetch('/Post/VotePost', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({
+                            postId: postId,
+                            userId: userId,
+                            voteType: voteType
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Vote response:', data);
+                        
+                        if (data.success) {
+                            scoreElement.textContent = data.newScore;
+                        } else {
+                            console.error('Vote failed:', data.message);
+                            // Revert UI changes if vote failed
+                            if (voteType === 'up') {
+                                upvoteBtn.classList.remove('active');
+                                upvoteBtn.querySelector('i').classList.remove('text-success');
+                            } else {
+                                downvoteBtn.classList.remove('active');
+                                downvoteBtn.querySelector('i').classList.remove('text-danger');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error voting:', error);
+                        // Revert UI changes on error
+                        if (voteType === 'up') {
+                            upvoteBtn.classList.remove('active');
+                            upvoteBtn.querySelector('i').classList.remove('text-success');
+                        } else {
+                            downvoteBtn.classList.remove('active');
+                            downvoteBtn.querySelector('i').classList.remove('text-danger');
+                        }
+                    });
+                });
+            });
+            const deleteCommentButtons = document.querySelectorAll('.delete-comment-btn');
+            const deleteCommentId = document.getElementById('deleteCommentId');
+
+            deleteCommentButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const commentId = this.getAttribute('data-comment-id');
+                    deleteCommentId.value = commentId;
+                });
+            });
+
+            const deletePostButtons = document.querySelectorAll('.delete-btn');
+            const deletePostTitle = document.getElementById('deletePostTitle');
+            const deletePostModal = new bootstrap.Modal(document.getElementById('deletePostModal'));
+
+            deletePostButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const postTitle = this.getAttribute('data-post-title');
+                    deletePostTitle.textContent = postTitle;
+                    deletePostModal.show();
+                });
+            });
+
+            const commentFile = document.getElementById('commentFile');
+            const fileSelected = document.getElementById('fileSelected');
+
+            if (commentFile && fileSelected) {
+                commentFile.addEventListener('change', function () {
+                    if (this.files.length > 0) {
+                        fileSelected.textContent = this.files[0].name;
+                    } else {
+                        fileSelected.textContent = 'File not selected';
+                    }
+                });
+            }
+
+            const toggleButtons = document.querySelectorAll('.toggle-post-content');
+
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const parentContent = this.closest('.post-content');
+                    const preview = parentContent.querySelector('.post-preview');
+                    const fullContent = parentContent.querySelector('.post-full-content');
+                    const readMoreText = this.querySelector('.read-more-text');
+                    const readLessText = this.querySelector('.read-less-text');
+                    const readMoreIcon = this.querySelector('.read-more-icon');
+                    const readLessIcon = this.querySelector('.read-less-icon');
+
+                    preview.classList.toggle('d-none');
+                    fullContent.classList.toggle('d-none');
+                    readMoreText.classList.toggle('d-none');
+                    readLessText.classList.toggle('d-none');
+                    readMoreIcon.classList.toggle('d-none');
+                    readLessIcon.classList.toggle('d-none');
+                });
+            });
+            
+            const inlineCommentFile = document.getElementById('inlineCommentFile');
+            if (inlineCommentFile) {
+                inlineCommentFile.addEventListener('change', function() {
+                    const fileIcon = this.previousElementSibling.querySelector('i');
+                    if (this.files.length > 0) {
+                        fileIcon.classList.remove('bi-image');
+                        fileIcon.classList.add('bi-check-circle-fill');
+                        fileIcon.style.color = '#28a745';
+                    } else {
+                        fileIcon.classList.remove('bi-check-circle-fill');
+                        fileIcon.classList.add('bi-image');
+                        fileIcon.style.color = '';
+                    }
+                });
+            }
+            
+            const emojiButtons = document.querySelectorAll('.emoji-btn');
+            const commentTextField = document.getElementById('commentTextField');
+            
+            emojiButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const emoji = this.textContent;
+                    
+                    if (document.activeElement === commentTextField) {
+                        const startPos = commentTextField.selectionStart;
+                        const endPos = commentTextField.selectionEnd;
+                        const beforeText = commentTextField.value.substring(0, startPos);
+                        const afterText = commentTextField.value.substring(endPos);
+                        commentTextField.value = beforeText + emoji + afterText;
+                        
+                        const newPos = startPos + emoji.length;
+                        commentTextField.setSelectionRange(newPos, newPos);
+                    } else {
+                        commentTextField.value += emoji;
+                    }
+                    
+                    commentTextField.focus();
+                });
+            });
+            
+            const commentSearchInput = document.getElementById('commentSearchInput');
+            const commentsContainer = document.getElementById('commentsContainer');
+            const comments = document.querySelectorAll('.comment');
+            const noCommentsMessage = document.getElementById('noCommentsMessage');
+            
+            commentSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                let visibleCount = 0;
+                
+                comments.forEach(comment => {
+                    const commentText = comment.getAttribute('data-comment-text');
+                    if (commentText.includes(searchTerm)) {
+                        comment.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        comment.style.display = 'none';
+                    }
+                });
+                
+                if (visibleCount === 0 && comments.length > 0) {
+                    if (!document.getElementById('noResultsMessage')) {
+                        const noResultsMessage = document.createElement('p');
+                        noResultsMessage.id = 'noResultsMessage';
+                        noResultsMessage.className = 'text-center text-muted my-4';
+                        noResultsMessage.textContent = 'No comments matching your search.';
+                        commentsContainer.appendChild(noResultsMessage);
+                    }
+                } else {
+                    const noResultsMessage = document.getElementById('noResultsMessage');
+                    if (noResultsMessage) {
+                        noResultsMessage.remove();
+                    }
+                }
+            });
+            
+            const sortOptions = document.querySelectorAll('.sort-option');
+            const currentSortMethod = document.getElementById('currentSortMethod');
+            
+            function sortComments(method) {
+                const comments = Array.from(document.querySelectorAll('.comment'));
+                if (comments.length === 0) return;
+                
+                comments.sort((a, b) => {
+                    if (method === 'newest') {
+                        return parseInt(b.getAttribute('data-comment-date')) - parseInt(a.getAttribute('data-comment-date'));
+                    } else if (method === 'oldest') {
+                        return parseInt(a.getAttribute('data-comment-date')) - parseInt(b.getAttribute('data-comment-date'));
+                    } else { // best
+                        return parseInt(b.getAttribute('data-comment-score')) - parseInt(a.getAttribute('data-comment-score'));
+                    }
+                });
+                
+                const commentsContainer = document.getElementById('commentsContainer');
+                comments.forEach(comment => commentsContainer.appendChild(comment));
+            }
+            
+            sortComments('best');
+            
+            sortOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sortMethod = this.getAttribute('data-sort');
+                    currentSortMethod.textContent = sortMethod.charAt(0).toUpperCase() + sortMethod.slice(1);
+                    sortComments(sortMethod);
+                });
+            });
+                        
+            document.querySelectorAll('.vote-btn').forEach(button => {
+                
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const commentId = this.getAttribute('data-comment-id');
+                    const userId = this.getAttribute('data-user-id');
+                    const voteType = this.getAttribute('data-vote-type');
+                    const commentElement = this.closest('.comment');
+                    const scoreElement = this.closest('.comment-votes').querySelector('.vote-score');
+                    
+                    const upvoteBtn = this.closest('.comment-votes').querySelector('.upvote-btn');
+                    const downvoteBtn = this.closest('.comment-votes').querySelector('.downvote-btn');
+                    
+                    if (voteType === 'up') {
+                        if (this.classList.contains('active')) {
+                            this.classList.remove('active');
+                            this.querySelector('i').classList.remove('text-success');
+                        } else {
+                            this.classList.add('active');
+                            this.querySelector('i').classList.add('text-success');
+                            
+                            if (downvoteBtn && downvoteBtn.classList.contains('active')) {
+                                downvoteBtn.classList.remove('active');
+                                downvoteBtn.querySelector('i').classList.remove('text-danger');
+                            }
+                        }
+                    } else { // down vote
+                        if (this.classList.contains('active')) {
+                            this.classList.remove('active');
+                            this.querySelector('i').classList.remove('text-danger');
+                        } else {
+                            this.classList.add('active');
+                            this.querySelector('i').classList.add('text-danger');
+                            
+                            if (upvoteBtn && upvoteBtn.classList.contains('active')) {
+                                upvoteBtn.classList.remove('active');
+                                upvoteBtn.querySelector('i').classList.remove('text-success');
+                            }
+                        }
+                    }
+                    
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]') ? 
+                                  document.querySelector('input[name="__RequestVerificationToken"]').value : null;
+                    
+                    if (!token) {
+                        console.error('CSRF token not found');
+                        return;
+                    }
+                    
+                    fetch('/Comment/Vote', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({
+                            commentId: commentId,
+                            userId: userId,
+                            voteType: voteType
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Vote response:', data);
+                        
+                        if (data.success) {
+                            scoreElement.textContent = data.newScore;
+                            commentElement.setAttribute('data-comment-score', data.newScore);
+                            
+                            if (currentSortMethod.textContent === 'Best') {
+                                sortComments('best');
+                            }
+                        } else {
+                            console.error('Vote failed:', data.message);
+                            if (voteType === 'up') {
+                                upvoteBtn.classList.remove('active');
+                                upvoteBtn.querySelector('i').classList.remove('text-success');
+                            } else {
+                                downvoteBtn.classList.remove('active');
+                                downvoteBtn.querySelector('i').classList.remove('text-danger');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error voting:', error);
+                        if (voteType === 'up') {
+                            upvoteBtn.classList.remove('active');
+                            upvoteBtn.querySelector('i').classList.remove('text-success');
+                        } else {
+                            downvoteBtn.classList.remove('active');
+                            downvoteBtn.querySelector('i').classList.remove('text-danger');
+                        }
+                    });
+                });
+            });
+        });
+
+        document.querySelectorAll('.vote-post-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const postId = this.getAttribute('data-post-id');
+                const userId = this.getAttribute('data-user-id');
+                const voteType = this.getAttribute('data-vote-type');
+                const scoreElement = this.closest('.d-flex').querySelector('.vote-post-score');
+                
+                const upvoteBtn = this.closest('.d-flex').querySelector('.upvote-post-btn');
+                const downvoteBtn = this.closest('.d-flex').querySelector('.downvote-post-btn');
+                
+                // Toggle button states
+                if (voteType === 'up') {
+                    if (this.classList.contains('active')) {
+                        this.classList.remove('active');
+                        this.querySelector('i').classList.remove('text-success');
+                    } else {
+                        this.classList.add('active');
+                        this.querySelector('i').classList.add('text-success');
+                        
+                        if (downvoteBtn && downvoteBtn.classList.contains('active')) {
+                            downvoteBtn.classList.remove('active');
+                            downvoteBtn.querySelector('i').classList.remove('text-danger');
+                        }
+                    }
+                } else {
+                    if (this.classList.contains('active')) {
+                        this.classList.remove('active');
+                        this.querySelector('i').classList.remove('text-danger');
+                    } else {
+                        this.classList.add('active');
+                        this.querySelector('i').classList.add('text-danger');
+                        
+                        if (upvoteBtn && upvoteBtn.classList.contains('active')) {
+                            upvoteBtn.classList.remove('active');
+                            upvoteBtn.querySelector('i').classList.remove('text-success');
+                        }
+                    }
+                }
+                
+                const token = document.querySelector('input[name="__RequestVerificationToken"]') ? 
+                           document.querySelector('input[name="__RequestVerificationToken"]').value : null;
+                
+                if (!token) {
+                    console.error('CSRF token not found');
+                    return;
+                }
+                
+                // Adjust the body structure to match the expected model
+                fetch('/Post/PostVote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        Post: {
+                            Id: postId,
+                            UserId: userId 
+                        },
+                        UserPostVote: voteType
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        scoreElement.textContent = data.newScore;
+                    } else {
+                        console.error('Vote failed:', data.message);
+                        if (voteType === 'up') {
+                            upvoteBtn.classList.remove('active');
+                            upvoteBtn.querySelector('i').classList.remove('text-success');
+                        } else {
+                            downvoteBtn.classList.remove('active');
+                            downvoteBtn.querySelector('i').classList.remove('text-danger');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error voting:', error);
+                    if (voteType === 'up') {
+                        upvoteBtn.classList.remove('active');
+                        upvoteBtn.querySelector('i').classList.remove('text-success');
+                    } else {
+                        downvoteBtn.classList.remove('active');
+                        downvoteBtn.querySelector('i').classList.remove('text-danger');
+                    }
+                });
+            });
+        });
+
+    </script>
+}

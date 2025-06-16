@@ -1,0 +1,261 @@
+@using System.Security.Claims
+@using Core.Interfaces
+@inject ITopicService topicService
+@model PostsListViewModel
+
+@{
+    ViewData["Title"] = "Posts Feed";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Sort by
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index" asp-route-sortBy="titlea" asp-route-page="1">Title Ascending</a></li>
+                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index" asp-route-sortBy="titled" asp-route-page="1">Title Descending</a></li>
+                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index" asp-route-sortBy="ratinga" asp-route-page="1">Rating (High-Low)</a></li>
+                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index" asp-route-sortBy="ratingd" asp-route-page="1">Rating (Low-High)</a></li>
+                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index" asp-route-sortBy="newest" asp-route-page="1">Newest</a></li>
+                        <li><a class="dropdown-item" asp-controller="Post" asp-action="Index" asp-route-sortBy="oldest" asp-route-page="1">Oldest</a></li>
+                    </ul>
+                </div>
+                <input type="text" id="searchInput" class="form-control" style="max-width: 20%;" placeholder="Search" aria-label="Search">
+                @if (User.Identity != null && User.Identity.IsAuthenticated && ViewBag.BannedTo == null)
+                {
+                    <a asp-controller="Post" asp-action="Add" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Add Post
+                    </a>
+                }
+            </div>
+
+            @for (int i = 0; i < Model.Posts.Count; i++)
+            {   
+                <div class="card mb-4 shadow-sm bg-dark text-light border-secondary">
+                    <a asp-controller="Post" asp-action="Details" asp-route-id="@Model.Posts[i].Id" class="text-decoration-none text-light">
+                    <div class="card-header text-white d-flex justify-content-between align-items-center" style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                        
+                        <div>
+                            <h2 class="h4 mb-0">
+                                @Model.Posts[i].Title                        
+                            </h2>
+                            <div class="d-flex align-items-center mt-2">
+                                <span class="badge bg-secondary me-2">
+                                    @{
+                                        var topicName = "No Topic";
+                                        if (Model.Posts[i].TopicId.HasValue)
+                                        {
+                                            var topicId = Model.Posts[i].TopicId;
+                                            var topic = topicId.HasValue ? await topicService.GetByIdAsync(topicId.Value) : null;
+                                            if (topic != null && !string.IsNullOrWhiteSpace(topic.Name))
+                                            {
+                                                topicName = topic.Name;
+                                            }
+                                        }
+                                    }
+                                    @topicName
+                                </span>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i> @Model.Posts[i].CreatedAt.ToString("MMM dd, yyyy")
+                                </small>
+                                <small class="text-muted ms-2">
+                                    <i class="bi bi-arrow-up-circle me-1"></i> @(Model.Posts[i].Rating)
+                                </small>
+                            </div>
+                            
+                        </div>
+                        
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);  
+                            
+                            if (User.IsInRole("Admin") || userId == Model.Posts[i].UserId.ToString())
+                            {
+                                <button type="button" class="border-0 bg-transparent p-2 text-danger delete-btn"
+                                    data-post-title="@Model.Posts[i].Title">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        }
+                        
+                    </div>
+                    <div class="card-body p-4">
+                        @{
+                            int maxLength = 200;
+                            string postText = Model.Posts[i].Text;
+                            bool isTruncated = postText.Length > maxLength;
+                        }
+                        
+                        @if (isTruncated)
+                        {
+                            <p class="mb-1 short-text">@postText.Substring(0, maxLength)...</p>
+                            <p class="mb-1 full-text" style="display: none;">@postText</p>
+                            <button class="btn btn-link text-primary read-more-btn p-0">Read more</button>
+                            <button class="btn btn-link text-primary read-less-btn p-0" style="display: none;">Show less</button>
+                        }
+                        else
+                        {
+                            <p>@postText</p>
+                        }
+                    </div>
+                    </a>
+                </div>
+            }
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <!-- Previous button -->
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link bg-dark text-light border-secondary" 
+                               asp-controller="Post" 
+                               asp-action="Index" 
+                               asp-route-page="@(Model.CurrentPage - 1)" 
+                               asp-route-sortBy="@Model.SortBy"
+                               aria-label="Previous">
+                                Previous
+                            </a>
+                        </li>
+                        
+                        <!-- Page numbers -->
+                        @{
+                            const int maxPagesToShow = 5;
+                            int startPage = Math.Max(1, Model.CurrentPage - maxPagesToShow / 2);
+                            int endPage = Math.Min(Model.TotalPages, startPage + maxPagesToShow - 1);
+                            
+                            // Adjust start page if we're near the end
+                            if (endPage - startPage + 1 < maxPagesToShow)
+                            {
+                                startPage = Math.Max(1, endPage - maxPagesToShow + 1);
+                            }
+                        }
+                        
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link @(i == Model.CurrentPage ? "bg-grey text-white" : "bg-dark text-light") border-secondary" 
+                                   asp-controller="Post" 
+                                   asp-action="Index" 
+                                   asp-route-page="@i" 
+                                   asp-route-sortBy="@Model.SortBy">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                        
+                        <!-- Next button -->
+                        <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link bg-dark text-light border-secondary" 
+                               asp-controller="Post" 
+                               asp-action="Index" 
+                               asp-route-page="@(Model.CurrentPage + 1)" 
+                               asp-route-sortBy="@Model.SortBy"
+                               aria-label="Next">
+                                Next
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Post Modal -->
+<div class="modal fade" id="deletePostModal" tabindex="-1" aria-labelledby="deletePostModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header bg-danger border-bottom border-secondary">
+                <h5 class="modal-title text-white" id="deletePostModalLabel">Delete Post</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-dark">
+                <p>Are you sure you want to delete the post "<span id="postTitleToDelete"></span>"?</p>
+                <p class="text-danger mb-0"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer bg-dark border-top border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deletePostForm" asp-action="Delete" method="post">
+                    <input type="hidden" id="deletePostTitle" name="title" value="" />
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Delete Post Modal functionality
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const postTitleToDelete = document.getElementById('postTitleToDelete');
+        const deletePostTitle = document.getElementById('deletePostTitle');
+        const deletePostModal = new bootstrap.Modal(document.getElementById('deletePostModal'));
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const postTitle = this.getAttribute('data-post-title');
+                
+                postTitleToDelete.textContent = postTitle;
+                deletePostTitle.value = postTitle;
+                
+                deletePostModal.show();
+            });
+        });
+
+        // Read more/less functionality
+        document.querySelectorAll('.read-more-btn').forEach(btn => {
+            btn.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const cardBody = this.closest('.card-body');
+                cardBody.querySelector('.short-text').style.display = 'none';
+                cardBody.querySelector('.full-text').style.display = 'block';
+                this.style.display = 'none';
+                cardBody.querySelector('.read-less-btn').style.display = 'inline';
+            });
+        });
+
+        document.querySelectorAll('.read-less-btn').forEach(btn => {
+            btn.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const cardBody = this.closest('.card-body');
+                cardBody.querySelector('.short-text').style.display = 'block';
+                cardBody.querySelector('.full-text').style.display = 'none';
+                this.style.display = 'none';
+                cardBody.querySelector('.read-more-btn').style.display = 'inline';
+            });
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function () {
+            let searchQuery = this.value.toLowerCase();
+            let posts = document.querySelectorAll('.card');
+
+            posts.forEach(post => {
+                let title = post.querySelector('h2').innerText.toLowerCase();
+                let content = post.querySelector('.card-body').innerText.toLowerCase();
+                let topic = post.querySelector('.badge.bg-secondary') ? 
+                            post.querySelector('.badge.bg-secondary').innerText.toLowerCase() : '';
+
+                if (title.includes(searchQuery) || content.includes(searchQuery) || topic.includes(searchQuery)) {
+                    post.style.display = 'block';
+                } else {
+                    post.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}

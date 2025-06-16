@@ -1,0 +1,301 @@
+@model CategoriesListViewModel
+
+@{
+    ViewData["Title"] = "Categories";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            <div class="card">
+                <div class="card-header text-white" style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0">All Categories</h2>
+                        <div>
+                            <form asp-action="Index" method="get" class="row g-2">
+                                <div class="input-group">
+                                    <input type="text" name="searchQuery" value="@Context.Request.Query["searchQuery"].ToString()" class="form-control bg-dark text-light border-secondary" placeholder="Search categories...">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                    @if (!string.IsNullOrEmpty(Context.Request.Query["searchQuery"]))
+                                    {
+                                        <a asp-action="Index" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> Clear
+                                        </a>
+                                    }
+                                </div>
+                                <input type="hidden" name="count" value="@Context.Request.Query["count"]" />
+                            </form>
+                        </div>
+                        @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                <i class="bi bi-plus-circle me-1"></i>Add Category
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th scope="col" width="60%">Category Name</th>
+                                @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                                {
+                                    <th scope="col" width="40%" class="text-center">Actions</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var category in Model.Categories)
+                            {
+                                <tr>
+                                    <td class="align-middle">@category.Name</td>
+                                    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                                    {
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-danger btn-action delete-btn" 
+                                                    data-category-name="@category.Name">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    
+                    <!-- Pagination controls -->
+                    @{
+                        var currentPage = Context.Request.Query.TryGetValue("page", out var pageValue) && int.TryParse(pageValue, out var page) ? page : 1;
+                        var currentCount = Context.Request.Query.TryGetValue("count", out var countValue) && int.TryParse(countValue, out var count) ? count : 7;
+                        var searchQuery = Context.Request.Query["searchQuery"];
+                    }
+                    
+                    <nav aria-label="Categories pagination">
+                        <ul class="pagination justify-content-center">
+                            @if (currentPage > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" 
+                                       asp-action="Index" 
+                                       asp-route-page="@(currentPage - 1)" 
+                                       asp-route-count="@currentCount"
+                                       asp-route-searchQuery="@searchQuery">
+                                        Previous
+                                    </a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item disabled">
+                                    <span class="page-link">Previous</span>
+                                </li>
+                            }
+                            
+                            @for (int i = 1; i <= (Model.Categories.Count < currentCount ? currentPage : currentPage + 1); i++)
+                            {
+                                <li class="page-item @(i == currentPage ? "active" : "")">
+                                    <a class="page-link" 
+                                       asp-action="Index" 
+                                       asp-route-page="@i" 
+                                       asp-route-count="@currentCount"
+                                       asp-route-searchQuery="@searchQuery">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+                            
+                            @if (Model.Categories.Count == currentCount)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" 
+                                       asp-action="Index" 
+                                       asp-route-page="@(currentPage + 1)" 
+                                       asp-route-count="@currentCount"
+                                       asp-route-searchQuery="@searchQuery">
+                                        Next
+                                    </a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next</span>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                    
+                    <!-- Items per page selector -->
+                    <div class="d-flex justify-content-end">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="itemsPerPageDropdown" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                Items per page: @currentCount
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="itemsPerPageDropdown">
+                                <li><a class="dropdown-item" asp-action="Index" asp-route-page="1" asp-route-count="5" asp-route-searchQuery="@searchQuery">5</a></li>
+                                <li><a class="dropdown-item" asp-action="Index" asp-route-page="1" asp-route-count="7" asp-route-searchQuery="@searchQuery">7</a></li>
+                                <li><a class="dropdown-item" asp-action="Index" asp-route-page="1" asp-route-count="10" asp-route-searchQuery="@searchQuery">10</a></li>
+                                <li><a class="dropdown-item" asp-action="Index" asp-route-page="1" asp-route-count="15" asp-route-searchQuery="@searchQuery">15</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+{
+    <!-- Add Category Modal -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-bottom border-secondary">
+                    <h5 class="modal-title" id="addCategoryModalLabel">Add New Category</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-dark">
+                    <form asp-action="Add" method="post" id="addCategoryForm">
+                        @if (ViewContext.ModelState.ErrorCount > 0)
+                        {
+                            <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                        }
+                        <div class="mb-4">
+                            <label for="name" class="form-label text-light">Category Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary border-secondary text-light"><i class="bi bi-pencil"></i></span>
+                                <input name="name" class="form-control bg-dark text-light border-secondary" placeholder="Enter category name" id="categoryName" />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-0" id="addCategoryButton" disabled>
+                            <i class="bi bi-plus-circle me-2"></i>Add Category
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header bg-danger border-bottom border-secondary">
+                    <h5 class="modal-title text-white" id="deleteCategoryModalLabel">Delete Category</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-dark">
+                    <p>Are you sure you want to delete the category "<span id="categoryNameToDelete"></span>"?</p>
+                    <p class="text-danger mb-0"><strong>This action cannot be undone.</strong></p>
+                </div>
+                <div class="modal-footer bg-dark border-top border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteCategoryForm" asp-action="Delete" method="post">
+                        <input type="hidden" id="deleteCategoryName" name="name" value="" />
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            // Enable/disable add category button based on input
+            const nameInput = document.querySelector('#categoryName');
+            const addCategoryButton = document.querySelector('#addCategoryButton');
+
+            function validateForm() {
+                addCategoryButton.disabled = !nameInput.value.trim();
+            }
+
+            nameInput.addEventListener('input', validateForm);
+
+            // Reset modal form when modal is closed
+            document.getElementById('addCategoryModal').addEventListener('hidden.bs.modal', function () {
+                document.getElementById('addCategoryForm').reset();
+                addCategoryButton.disabled = true;
+            });
+
+            // Delete category confirmation
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            const categoryNameToDelete = document.getElementById('categoryNameToDelete');
+            const deleteCategoryName = document.getElementById('deleteCategoryName');
+            const deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const categoryName = this.getAttribute('data-category-name');
+                    
+                    categoryNameToDelete.textContent = categoryName;
+                    deleteCategoryName.value = categoryName;
+                    
+                    deleteCategoryModal.show();
+                });
+            });
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.querySelector('input[name="searchQuery"]');
+                const searchForm = document.querySelector('form[method="get"]');
+                
+                // Optional: Add debounce to search input
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        if (this.value.length > 2 || this.value.length === 0) {
+                            searchForm.submit();
+                        }
+                    }, 500);
+                });
+            });
+        </script>
+    }
+}
+
+<style>
+    /* Custom styles for consistent button sizing */
+    .btn-action {
+        width: 130px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .pagination .page-link {
+        color: #4ecdc4;
+        background-color: #212529;
+        border-color: #495057;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #212529;
+        border-color: #495057;
+    }
+
+    .pagination .page-link:hover {
+        color: #4ecdc4;
+        background-color: #495057;
+        border-color: #495057;
+    }
+
+    .dropdown-menu {
+        background-color: #212529;
+        border-color: #495057;
+    }
+
+    .dropdown-item {
+        color: #f8f9fa;
+    }
+
+    .dropdown-item:hover {
+        background-color: #495057;
+        color: #f8f9fa;
+    }
+</style>

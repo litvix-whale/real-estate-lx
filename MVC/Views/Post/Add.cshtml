@@ -1,0 +1,99 @@
+@using System.Security.Claims
+@model AddPostViewModel
+
+@{
+    ViewData["Title"] = "Add Post";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card bg-dark text-light shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0">Add New Post</h2>
+                </div>
+                <div class="card-body p-4">
+                    @if(ViewBag.BannedTo == null)
+                    {
+                        <form asp-action="Add" method="post" enctype="multipart/form-data">
+                            @if (ViewContext.ModelState.ErrorCount > 0)
+                            {
+                                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                            }
+                            <div class="mb-4">
+                                <label for="title" class="form-label text-light">Post Title</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-secondary border-secondary text-light"><i class="bi bi-pencil"></i></span>
+                                    <input name="title" class="form-control bg-dark text-light border-secondary" placeholder="Enter post name" id="title" />
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="text" class="control-label text-light">Content</label>
+                                <textarea name="text" id="text" class="form-control bg-dark text-light border-secondary" rows="6"></textarea>
+                                <span asp-validation-for="Text" class="text-danger"></span>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="topicId" class="control-label text-light">Topic</label>
+                                <select name="topicId" id="topicId" class="form-select bg-dark text-light border-secondary" required>
+                                    @if (Model.TopicId != Guid.Empty)
+                                    {
+                                        var selectedTopic = Model.AvailableTopics.FirstOrDefault(t => t.Id == Model.TopicId);
+                                        <option value="@Model.TopicId">@selectedTopic?.Name</option>
+                                    } 
+                                    else
+                                    {
+                                        <option value="">-- Select Topic --</option>
+                                    }
+                                    @foreach (var topic in Model.AvailableTopics)
+                                    {
+                                        if (topic.Id != Model.TopicId)
+                                        {
+                                            <option value="@topic.Id">@topic.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="file" class="control-label text-light">Attachment</label>
+                                <input name="file" id="file" type="file" class="form-control bg-dark text-light border-secondary" />
+                            </div>
+                            <input type="hidden" name="userId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-controller="Post" asp-action="Index" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i> Back to Posts
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="addPostButton" disabled>
+                                    <i class="bi bi-plus-circle me-1"></i> Add Post
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            You are banned until @ViewBag.BannedTo.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const titleInput = document.querySelector('#title');
+        const textInput = document.querySelector('#text');
+        const topicIdInput = document.querySelector('#topicId');
+        const addPostButton = document.querySelector('#addPostButton');
+
+        function validateForm() {
+            addPostButton.disabled = !(titleInput.value.trim() && textInput.value.trim() && topicIdInput.value);
+        }
+
+        titleInput.addEventListener('input', validateForm);
+        textInput.addEventListener('input', validateForm);
+        topicIdInput.addEventListener('change', validateForm);
+    </script>
+}

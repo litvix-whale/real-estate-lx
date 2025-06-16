@@ -1,0 +1,130 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/MVC.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>@ViewData["Title"] - TrashTalk</title>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Post" asp-action="Index">TrashTalk</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Topic" asp-action="Index">Topics</a>
+                        </li>
+                        @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="User" asp-action="Users">Users</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Category" asp-action="Index">Categories</a>
+                            </li>
+                        }
+                    </ul>
+                    <div class="d-flex align-items-center">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <div class="me-3">
+                                <a class="nav-link notification-icon" asp-controller="Notification" asp-action="Index">
+                                    <i class="bi bi-bell fs-5"></i>
+                                    <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
+                                    </span>
+                                </a>
+                            </div>
+                        }
+                        <partial name="_LoginPartial" />
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="text-center">
+            &copy; 2025 - TrashTalk - <a asp-area="" asp-controller="Home" asp-action="Privacy">Gooners Team</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+    @await RenderSectionAsync("Styles", required: false)
+    <script>
+        $(document).ready(function() {
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <text>
+                // Load initial notification count
+                loadNotificationCount();
+
+                // Set up SignalR
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                // Add handler for receiving notifications
+                connection.on("ReceiveNotification", function(message) {
+                    console.log("Notification received:", message);
+                    showToast(message);
+                    loadNotificationCount();
+                });
+
+                // Start the connection
+                connection.start()
+                    .then(() => console.log("SignalR Connected"))
+                    .catch(err => console.error("SignalR Connection Error:", err));
+
+                // Function to load and update notification count
+                function loadNotificationCount() {
+                    $.ajax({
+                        url: '@Url.Action("GetUnreadCount", "Notification")',
+                        type: 'GET',
+                        success: function(data) {
+                            updateNotificationBadge(data.count);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error loading notification count:", error);
+                        }
+                    });
+                }
+
+                // Function to update the badge directly
+                function updateNotificationBadge(count) {
+                    const badge = $('#notification-badge');
+                    badge.html(count > 99 ? '99+' : count.toString());
+                    badge.toggle(count > 0); // Show/hide based on count
+                }
+
+                // Function to show toast notification (unchanged)
+                function showToast(message) {
+                    // ... existing toast code ...
+                }
+                </text>
+            }
+        });
+    </script>
+</body>
+</html>
