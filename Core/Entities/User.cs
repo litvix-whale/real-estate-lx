@@ -8,4 +8,5 @@ public class User : IdentityUser<Guid>
     public DateTime? BannedTo { get; set; }
     public string ProfilePicture { get; set; } = "pfp_1.png";
     public virtual ICollection<UserTitle> Titles { get; set; } = new List<UserTitle>();
+    public virtual ICollection<RealEstate> RealEstates { get; set; } = new List<RealEstate>();
 }
