@@ -21,4 +21,5 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<CommentVote> CommentVotes { get; set; }
     public DbSet<UserTitle> UserTitles { get; set; }
     public DbSet<RealEstate> RealEstates { get; set; }
+    public DbSet<RealEstateImage> RealEstateImages { get; set; }
 }

@@ -513,10 +513,10 @@ namespace Infrastructure.Seed
             NewBuildingName = "ÆÊ Manhattan",
             Price = 600,
             Currency = CurrencyEnum.USD,
-            ImageUrls = new List<string>
+            Images = new List<RealEstateImage>
             {
-                "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg",
-                "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/5de324f815eb0fb522d8a0d645a52cf0.jpg"
+                new() { Url = "https://.../image1.jpg", UiPriority = 0 },
+                new() { Url = "https://.../image2.jpg", UiPriority = 1 }
             },
             UserId = user.Id
         },
@@ -543,15 +543,11 @@ namespace Infrastructure.Seed
             RoomCount = 3,
             Price = 13500,
             Currency = CurrencyEnum.UAH,
-            ImageUrls = new List<string>
+            Images = new List<RealEstateImage>
             {
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/563a5ac32b5ad721e29a54202fe1dae6.jpg",
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/24fa51495afa45ef10d793382f915478.jpg",
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/8c1c78da7e399ef9c8563ca48df67e46.jpg",
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/6657f4d5a23acb9b78e9ea28410db85b.jpg",
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/278ec410d9c77addf6d94d803d706b65.jpg",
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/24b6ed9b6c89eecdf32121b1cb241be5.jpg",
-                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/845d47b8ecf6961bf943152abb04b4f1.jpg"
+                new() { Url = "https://.../image3.jpg", UiPriority = 0 },
+                new() { Url = "https://.../image4.jpg", UiPriority = 1 },
+                new() { Url = "https://.../image5.jpg", UiPriority = 2 }
             },
             UserId = user.Id
         }

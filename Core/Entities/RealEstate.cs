@@ -39,7 +39,6 @@ namespace Core.Entities
         public decimal Price { get; set; }
         public CurrencyEnum Currency { get; set; }
 
-        public List<string> ImageUrls { get; set; } = new();
         public virtual ICollection<RealEstateImage> Images { get; set; } = new List<RealEstateImage>();
 
         public Guid UserId { get; set; }
