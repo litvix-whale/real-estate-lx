@@ -107,7 +107,7 @@ using (var scope = app.Services.CreateScope())
         // Apply migrations synchronously first
         dbContext.Database.Migrate();
 
-        /* await using var asyncScope = services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
+        await using var asyncScope = services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
         var asyncServices = asyncScope.ServiceProvider;
 
         await DatabaseSeeder.SeedDatabase(
@@ -115,7 +115,7 @@ using (var scope = app.Services.CreateScope())
             asyncServices.GetRequiredService<UserManager<User>>(),
             asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
             Env.GetString("ADMIN_PASSWORD")
-        ); */
+        );
     }
     catch (Exception ex)
     {

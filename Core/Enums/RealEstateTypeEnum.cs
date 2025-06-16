@@ -2,11 +2,11 @@
 {
     public enum RealEstateTypeEnum
     {
-        Квартира = 1,
-        Будинок = 2,
-        Кімната = 3,
-        Ділянка = 4,
-        Офіс = 5,
-        Інше = 6
+        Apartment = 1,
+        House = 2,
+        Room = 3,
+        LandPlot = 4,
+        Office = 5,
+        Other = 6
     }
 }

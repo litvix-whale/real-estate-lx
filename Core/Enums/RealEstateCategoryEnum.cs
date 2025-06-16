@@ -2,7 +2,7 @@
 {
     public enum RealEstateCategoryEnum
     {
-        Житлова = 1,
-        Комерційна = 2
+        Residential = 1,
+        Commercial = 2
     }
 }

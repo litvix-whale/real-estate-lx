@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Core.Enums;
 
 namespace Infrastructure.Seed
 {
@@ -477,5 +478,88 @@ namespace Infrastructure.Seed
             }
             await context.SaveChangesAsync();
         }
+
+        private static async Task SeedRealEstates(AppDbContext context, UserManager<User> userManager)
+        {
+            if (context.RealEstates.Any()) return;
+
+            var user = await userManager.FindByEmailAsync("john@example.com");
+            if (user == null) return;
+
+            var estates = new List<RealEstate>
+    {
+        new RealEstate
+        {
+            Title = "Оренда 1 кімнатної квартири на Степанівни",
+            Description = "Квартира з ремонтом, зручна локація, інтернет, меблі.",
+            IsNewBuilding = true,
+            Category = RealEstateCategoryEnum.Residential,
+            RealtyType = RealEstateTypeEnum.Apartment,
+            Deal = DealTypeEnum.Rent,
+            Country = "Україна",
+            Region = "Львівська область",
+            Locality = "Львів",
+            Borough = "Залізничний",
+            Street = "Степанівни",
+            StreetType = "вулиця",
+            Latitude = 49.8428706,
+            Longitude = 23.9994757,
+            Floor = 3,
+            TotalFloors = 7,
+            AreaTotal = 68.7f,
+            AreaLiving = 20f,
+            AreaKitchen = 38.02f,
+            RoomCount = 1,
+            NewBuildingName = "ЖК Manhattan",
+            Price = 600,
+            Currency = CurrencyEnum.USD,
+            ImageUrls = new List<string>
+            {
+                "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg",
+                "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/5de324f815eb0fb522d8a0d645a52cf0.jpg"
+            },
+            UserId = user.Id
+        },
+        new RealEstate
+        {
+            Title = "Оренда 3-кім. квартири. вул. Личаківська-Тракт Глинянський",
+            Description = "Оренда 3-кім. квартири. вул. Личаківська-Тракт Глинянський. Ремонт косметичний. Кімнати ізольовані. Меблі та побутова техніка. Два бойлера. Два засклених балкона. Ванна. Інтернет. Відеоогляд.",
+            IsNewBuilding = false,
+            Category = RealEstateCategoryEnum.Residential,
+            RealtyType = RealEstateTypeEnum.Apartment,
+            Deal = DealTypeEnum.Rent,
+            Country = "Україна",
+            Region = "Львівська область",
+            Locality = "Львів",
+            Borough = "Личаківський",
+            Street = "Глинянський Тракт",
+            StreetType = "вулиця",
+            Latitude = 49.8375986,
+            Longitude = 24.0764789,
+            Floor = 4,
+            TotalFloors = 9,
+            AreaTotal = 70,
+            AreaKitchen = 11,
+            RoomCount = 3,
+            Price = 13500,
+            Currency = CurrencyEnum.UAH,
+            ImageUrls = new List<string>
+            {
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/563a5ac32b5ad721e29a54202fe1dae6.jpg",
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/24fa51495afa45ef10d793382f915478.jpg",
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/8c1c78da7e399ef9c8563ca48df67e46.jpg",
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/6657f4d5a23acb9b78e9ea28410db85b.jpg",
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/278ec410d9c77addf6d94d803d706b65.jpg",
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/24b6ed9b6c89eecdf32121b1cb241be5.jpg",
+                "https://recrm21.s3.eu-west-1.amazonaws.com/2024/07/845d47b8ecf6961bf943152abb04b4f1.jpg"
+            },
+            UserId = user.Id
+        }
+    };
+
+            await context.RealEstates.AddRangeAsync(estates);
+            await context.SaveChangesAsync();
+        }
+
     }
 }
