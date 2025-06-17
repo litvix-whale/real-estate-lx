@@ -100,13 +100,6 @@ namespace MVC.Controllers
             return View(realEstate);
         }
 
-        [HttpGet]
-        [Authorize]
-        public IActionResult Create()
-        {
-            return View();
-        }
-
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Create(RealEstate model)
@@ -239,6 +232,122 @@ namespace MVC.Controllers
         private bool GetSortDirection(string sortOrder)
         {
             return sortOrder.EndsWith("_desc");
+        }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult Create()
+        {
+            return View(new CreateRealEstateViewModel());
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(CreateRealEstateViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!Guid.TryParse(userId, out Guid userGuid))
+                {
+                    ModelState.AddModelError(string.Empty, "User not authenticated");
+                    return View(model);
+                }
+
+                // Create RealEstate entity
+                var realEstate = new RealEstate
+                {
+                    Title = model.Title,
+                    Description = model.Description,
+                    Category = model.Category,
+                    RealtyType = model.RealtyType,
+                    Deal = model.Deal,
+                    IsNewBuilding = model.IsNewBuilding,
+                    Country = model.Country,
+                    Region = model.Region,
+                    Locality = model.Locality,
+                    Borough = model.Borough ?? string.Empty,
+                    Street = model.Street,
+                    StreetType = model.StreetType ?? string.Empty,
+                    Latitude = model.Latitude,
+                    Longitude = model.Longitude,
+                    Floor = model.Floor,
+                    TotalFloors = model.TotalFloors,
+                    AreaTotal = model.AreaTotal,
+                    AreaLiving = model.AreaLiving,
+                    AreaKitchen = model.AreaKitchen,
+                    RoomCount = model.RoomCount,
+                    NewBuildingName = model.NewBuildingName,
+                    Price = model.Price,
+                    Currency = model.Currency,
+                    UserId = userGuid
+                };
+
+                // Handle image uploads
+                if (model.Images != null && model.Images.Any())
+                {
+                    var imageList = new List<RealEstateImage>();
+                    int priority = 1;
+
+                    foreach (var imageFile in model.Images)
+                    {
+                        if (imageFile.Length > 0)
+                        {
+                            var fileName = await SaveImageAsync(imageFile);
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                imageList.Add(new RealEstateImage
+                                {
+                                    Url = fileName,
+                                    UiPriority = priority++,
+                                    RealEstateId = realEstate.Id
+                                });
+                            }
+                        }
+                    }
+                    realEstate.Images = imageList;
+                }
+
+                var result = await _realEstateService.CreateRealEstateAsync(realEstate);
+
+                if (result == "Success")
+                {
+                    TempData["SuccessMessage"] = "Property added successfully!";
+                    return RedirectToAction("Details", new { id = realEstate.Id });
+                }
+
+                ModelState.AddModelError(string.Empty, result);
+            }
+
+            return View(model);
+        }
+
+        private async Task<string?> SaveImageAsync(IFormFile imageFile)
+        {
+            try
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "properties");
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + imageFile.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+
+                return "/images/properties/" + uniqueFileName;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
