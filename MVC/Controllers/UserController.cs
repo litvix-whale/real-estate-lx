@@ -6,10 +6,9 @@ using System.Security.Claims;
 
 namespace MVC.Controllers
 {
-    public class UserController(IUserService userService, IPostService postService) : Controller
+    public class UserController(IUserService userService) : Controller
     {
         private readonly IUserService _userService = userService;
-        private readonly IPostService _postService = postService;
 
         [HttpGet]
         public IActionResult Register()
@@ -148,15 +147,6 @@ namespace MVC.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Ban(string email)
-        {
-            var user = await _userService.GetUserByUserNameAsync(email);
-            var model = new BanViewModel { UserName = user.UserName!, BannedTo = null };
-            return View(model);
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> BanUser(string email, DateTime? bannedTo)
         {
             var result = await _userService.BanUserAsync(email, bannedTo);
@@ -191,15 +181,12 @@ namespace MVC.Controllers
         {
             var user = await _userService.GetUserByUserNameAsync(User.Identity?.Name!);
             
-            var userTitles = await _postService.GetUserTitlesAsync(user.Id);
-            
             var model = new ProfileViewModel 
             { 
                 Email = user.Email, 
                 UserName = user.UserName, 
                 ProfilePicture = user.ProfilePicture,
                 NewUserName = user.UserName,
-                Titles = userTitles
             };
             
             return View(model);

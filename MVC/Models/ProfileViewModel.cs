@@ -24,6 +24,4 @@ public class ProfileViewModel
     [Required]
     [Display(Name = "Profile Picture")]
     public string? NewProfilePicture { get; set; }
-
-    public List<UserTitle> Titles { get; set; } = new List<UserTitle>();
 }

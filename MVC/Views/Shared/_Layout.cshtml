@@ -16,15 +16,11 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-light">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Post" asp-action="Index">TrashTalk</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse">
                     <ul class="navbar-nav me-auto">
-	                    <li class="nav-item">
-		                    <a class="nav-link" asp-area="" asp-controller="Topic" asp-action="Index">Topics</a>
-	                    </li>
 	                    <li class="nav-item">
 		                    <a class="nav-link" asp-area="" asp-controller="RealEstate" asp-action="Index">Real Estate</a>
 	                    </li>
@@ -33,22 +29,9 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="User" asp-action="Users">Users</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Category" asp-action="Index">Categories</a>
-                            </li>
                         }
                     </ul>
                     <div class="d-flex align-items-center">
-                        @if (User.Identity != null && User.Identity.IsAuthenticated)
-                        {
-                            <div class="me-3">
-                                <a class="nav-link notification-icon" asp-controller="Notification" asp-action="Index">
-                                    <i class="bi bi-bell fs-5"></i>
-                                    <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-                                    </span>
-                                </a>
-                            </div>
-                        }
                         <partial name="_LoginPartial" />
                     </div>
                 </div>
@@ -100,19 +83,6 @@
                     .then(() => console.log("SignalR Connected"))
                     .catch(err => console.error("SignalR Connection Error:", err));
 
-                // Function to load and update notification count
-                function loadNotificationCount() {
-                    $.ajax({
-                        url: '@Url.Action("GetUnreadCount", "Notification")',
-                        type: 'GET',
-                        success: function(data) {
-                            updateNotificationBadge(data.count);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error loading notification count:", error);
-                        }
-                    });
-                }
 
                 // Function to update the badge directly
                 function updateNotificationBadge(count) {

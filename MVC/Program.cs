@@ -52,34 +52,6 @@ builder.Services.AddSignalR();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-
-builder.Services.AddScoped<ITopicRepository, TopicRepository>();
-builder.Services.AddScoped<ITopicService, TopicService>();
-
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-
-builder.Services.AddScoped<ITopicCategoryRepository, TopicCategoryRepository>();
-
-builder.Services.AddScoped<IPostRepository, PostRepository>();
-builder.Services.AddScoped<IPostService, PostService>();
-builder.Services.AddScoped<IPostVoteRepository, PostVoteRepository>();
-
-builder.Services.AddScoped<ICommentRepository, CommentRepository>();
-
-builder.Services.AddScoped<ICommentVoteRepository, CommentVoteRepository>();
-
-builder.Services.AddScoped<IUserTopicRepository, UserTopicRepository>();
-
-builder.Services.AddScoped<IUserPostRepository, UserPostRepository>();
-
-builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
-
-builder.Services.AddScoped<IPostVoteRepository, PostVoteRepository>();
-
-builder.Services.AddScoped<IUserTitleRepository, UserTitleRepository>();
-
 builder.Services.AddScoped<IRealEstateRepository, RealEstateRepository>();
 builder.Services.AddScoped<IRealEstateService, RealEstateService>();
 

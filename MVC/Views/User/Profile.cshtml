@@ -19,19 +19,6 @@
                     </div>
                     <h5 class="mb-2">@Model.UserName</h5>
                     <p class="text-muted mb-2">@Model.Email</p>
-                    
-                    <!-- Display user titles -->
-                    @if (Model.Titles.Any())
-                    {
-                        <hr />
-                        <h6 class="mb-2">Achievements</h6>
-                        <div class="user-titles">
-                            @foreach (var title in Model.Titles)
-                            {
-                                <span class="badge bg-primary me-1 mb-1">@title.Title</span>
-                            }
-                        </div>
-                    }
                 </div>
             </div>
         </div>
