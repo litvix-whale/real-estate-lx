@@ -81,6 +81,7 @@ builder.Services.AddScoped<IPostVoteRepository, PostVoteRepository>();
 builder.Services.AddScoped<IUserTitleRepository, UserTitleRepository>();
 
 builder.Services.AddScoped<IRealEstateRepository, RealEstateRepository>();
+builder.Services.AddScoped<IRealEstateService, RealEstateService>();
 
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -110,12 +111,12 @@ using (var scope = app.Services.CreateScope())
         await using var asyncScope = services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
         var asyncServices = asyncScope.ServiceProvider;
 
-        await DatabaseSeeder.SeedDatabase(
-            asyncServices.GetRequiredService<AppDbContext>(),
-            asyncServices.GetRequiredService<UserManager<User>>(),
-            asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
-            Env.GetString("ADMIN_PASSWORD")
-        );
+        //await DatabaseSeeder.SeedDatabase(
+        //    asyncServices.GetRequiredService<AppDbContext>(),
+        //    asyncServices.GetRequiredService<UserManager<User>>(),
+        //    asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
+        //    Env.GetString("ADMIN_PASSWORD")
+        //);
     }
     catch (Exception ex)
     {

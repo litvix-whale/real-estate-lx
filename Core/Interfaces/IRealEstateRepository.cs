@@ -4,20 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Core.Entities;
+using Core.Models;
 
 namespace Core.Interfaces
 {
     public interface IRealEstateRepository : IRepository<RealEstate>
     {
-        Task<IEnumerable<RealEstate>> SearchAsync(
-            string? city = null,
-            string? borough = null,
-            int? roomCount = null,
-            decimal? minPrice = null,
-            decimal? maxPrice = null,
-            bool? isNew = null,
-            string? keyword = null
-        );
+        Task<IEnumerable<RealEstate>> SearchAsync(RealEstateSearchCriteria criteria);
+        Task<int> GetSearchCountAsync(RealEstateSearchCriteria criteria);
+        Task<IEnumerable<RealEstate>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<RealEstate>> GetByLocationAsync(string locality, string? region = null);
+        Task<RealEstate?> GetByIdWithImagesAsync(Guid id);
     }
 
 }

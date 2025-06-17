@@ -1,0 +1,393 @@
+﻿@using Core.Enums
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model RealEstateSearchViewModel
+
+@{
+    ViewData["Title"] = "Real Estate Search";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-header text-white">
+                    <h5 class="mb-0">Search Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Index" method="get">
+                        <!-- Search Query -->
+                        <div class="mb-3">
+                            <label class="form-label">Search</label>
+                            <input asp-for="SearchQuery" class="form-control" placeholder="Title, description, location..." />
+                        </div>
+
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label asp-for="Category" class="form-label">Category</label>
+                            <select asp-for="Category" class="form-select">
+                                <option value="">All Categories</option>
+                                @foreach (var category in Enum.GetValues<RealEstateCategoryEnum>())
+                                {
+                                    <option value="@category">@category</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Property Type -->
+                        <div class="mb-3">
+                            <label asp-for="RealtyType" class="form-label">Property Type</label>
+                            <select asp-for="RealtyType" class="form-select">
+                                <option value="">All Types</option>
+                                @foreach (var type in Enum.GetValues<RealEstateTypeEnum>())
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Deal Type -->
+                        <div class="mb-3">
+                            <label asp-for="Deal" class="form-label">Deal Type</label>
+                            <select asp-for="Deal" class="form-select">
+                                <option value="">All Deals</option>
+                                @foreach (var deal in Enum.GetValues<DealTypeEnum>())
+                                {
+                                    <option value="@deal">@deal</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label asp-for="Locality" class="form-label">City</label>
+                            <input asp-for="Locality" class="form-control" placeholder="Enter city" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Region" class="form-label">Region</label>
+                            <input asp-for="Region" class="form-control" placeholder="Enter region" />
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="mb-3">
+                            <label class="form-label">Price Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input asp-for="MinPrice" class="form-control" placeholder="Min" />
+                                </div>
+                                <div class="col-6">
+                                    <input asp-for="MaxPrice" class="form-control" placeholder="Max" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Currency -->
+                        <div class="mb-3">
+                            <label asp-for="Currency" class="form-label">Currency</label>
+                            <select asp-for="Currency" class="form-select">
+                                <option value="">Any Currency</option>
+                                @foreach (var currency in Enum.GetValues<CurrencyEnum>())
+                                {
+                                    <option value="@currency">@currency</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Rooms -->
+                        <div class="mb-3">
+                            <label class="form-label">Rooms</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input asp-for="MinRoomCount" class="form-control" placeholder="Min" />
+                                </div>
+                                <div class="col-6">
+                                    <input asp-for="MaxRoomCount" class="form-control" placeholder="Max" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Area -->
+                        <div class="mb-3">
+                            <label class="form-label">Area (m²)</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input asp-for="MinAreaTotal" class="form-control" placeholder="Min" />
+                                </div>
+                                <div class="col-6">
+                                    <input asp-for="MaxAreaTotal" class="form-control" placeholder="Max" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- New Building -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsNewBuilding" class="form-check-input" />
+                                <label asp-for="IsNewBuilding" class="form-check-label">New Building Only</label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Search
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-header text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <h4 class="mb-0 me-3">Real Estate Listings</h4>
+                            <span class="badge bg-light text-primary">@Model.TotalItems properties</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <!-- Sort Options -->
+                            <form asp-action="Index" method="get" class="d-flex align-items-center">
+                                @Html.Hidden("searchQuery", Model.SearchQuery)
+                                @Html.Hidden("category", Model.Category)
+                                @Html.Hidden("realtyType", Model.RealtyType)
+                                @Html.Hidden("deal", Model.Deal)
+                                @Html.Hidden("locality", Model.Locality)
+                                @Html.Hidden("region", Model.Region)
+                                @Html.Hidden("minPrice", Model.MinPrice)
+                                @Html.Hidden("maxPrice", Model.MaxPrice)
+                                @Html.Hidden("currency", Model.Currency)
+                                @Html.Hidden("minRoomCount", Model.MinRoomCount)
+                                @Html.Hidden("maxRoomCount", Model.MaxRoomCount)
+                                @Html.Hidden("minAreaTotal", Model.MinAreaTotal)
+                                @Html.Hidden("maxAreaTotal", Model.MaxAreaTotal)
+                                @Html.Hidden("isNewBuilding", Model.IsNewBuilding)
+                                @Html.Hidden("page", Model.Page)
+                                @Html.Hidden("pageSize", Model.PageSize)
+
+                                <label class="form-label text-white me-2 mb-0">Sort by:</label>
+                                <select name="sortOrder" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                    <option value="date_desc" selected="@(Model.SortOrder == "date_desc")">Newest First</option>
+                                    <option value="date_asc" selected="@(Model.SortOrder == "date_asc")">Oldest First</option>
+                                    <option value="price_asc" selected="@(Model.SortOrder == "price_asc")">Price: Low to High</option>
+                                    <option value="price_desc" selected="@(Model.SortOrder == "price_desc")">Price: High to Low</option>
+                                    <option value="area_desc" selected="@(Model.SortOrder == "area_desc")">Area: Large to Small</option>
+                                    <option value="area_asc" selected="@(Model.SortOrder == "area_asc")">Area: Small to Large</option>
+                                    <option value="rooms_desc" selected="@(Model.SortOrder == "rooms_desc")">Most Rooms</option>
+                                    <option value="rooms_asc" selected="@(Model.SortOrder == "rooms_asc")">Least Rooms</option>
+                                </select>
+                            </form>
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <a asp-action="Create" class="btn btn-success ms-3">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Property
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.RealEstates.Any())
+                    {
+                        <div class="row">
+                            @foreach (var property in Model.RealEstates)
+                            {
+                                <div class="col-md-6 col-xl-4 mb-4">
+                                    <div class="card h-100 property-card">
+                                        <div class="position-relative">
+                                            @if (property.Images.Any())
+                                            {
+                                                <img src="@property.Images.OrderBy(i => i.UiPriority).First().Url"
+                                                     class="card-img-top property-image" alt="@property.Title">
+                                            }
+                                            else
+                                            {
+                                                <div class="card-img-top property-image-placeholder d-flex align-items-center justify-content-center">
+                                                    <i class="bi bi-house text-muted" style="font-size: 3rem;"></i>
+                                                </div>
+                                            }
+
+                                            <div class="position-absolute top-0 start-0 m-2">
+                                                <span class="badge bg-primary">@property.Deal</span>
+                                                @if (property.IsNewBuilding)
+                                                {
+                                                    <span class="badge bg-success">New Building</span>
+                                                }
+                                            </div>
+
+                                            <div class="position-absolute top-0 end-0 m-2">
+                                                <span class="badge bg-dark">@property.RealtyType</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-body d-flex flex-column">
+                                            <h6 class="card-title">@property.Title</h6>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-geo-alt me-1"></i>@property.Locality, @property.Region
+                                            </p>
+
+                                            <div class="row text-center mb-3">
+                                                <div class="col-4">
+                                                    <small class="text-muted">Rooms</small>
+                                                    <div class="fw-bold">@property.RoomCount</div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Area</small>
+                                                    <div class="fw-bold">@property.AreaTotal m²</div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted">Floor</small>
+                                                    <div class="fw-bold">@property.Floor/@property.TotalFloors</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <div class="price">
+                                                        <span class="h5 text-primary mb-0">@property.Price.ToString("N0") @property.Currency</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="d-grid">
+                                                    <a asp-action="Details" asp-route-id="@property.Id" class="btn btn-outline-primary">
+                                                        <i class="bi bi-eye me-2"></i>View Details
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Pagination -->
+                        @if (Model.TotalPages > 1)
+                        {
+                            <nav aria-label="Page navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                        <a class="page-link" asp-action="Index"
+                                           asp-route-page="1"
+                                           asp-route-searchQuery="@Model.SearchQuery"
+                                           asp-route-category="@Model.Category"
+                                           asp-route-realtyType="@Model.RealtyType"
+                                           asp-route-deal="@Model.Deal"
+                                           asp-route-locality="@Model.Locality"
+                                           asp-route-region="@Model.Region"
+                                           asp-route-minPrice="@Model.MinPrice"
+                                           asp-route-maxPrice="@Model.MaxPrice"
+                                           asp-route-currency="@Model.Currency"
+                                           asp-route-minRoomCount="@Model.MinRoomCount"
+                                           asp-route-maxRoomCount="@Model.MaxRoomCount"
+                                           asp-route-minAreaTotal="@Model.MinAreaTotal"
+                                           asp-route-maxAreaTotal="@Model.MaxAreaTotal"
+                                           asp-route-isNewBuilding="@Model.IsNewBuilding"
+                                           asp-route-sortOrder="@Model.SortOrder"
+                                           asp-route-pageSize="@Model.PageSize">First</a>
+                                    </li>
+
+                                    @{
+                                        int startPage = Math.Max(1, Model.Page - 2);
+                                        int endPage = Math.Min(startPage + 4, Model.TotalPages);
+                                        if (endPage - startPage < 4)
+                                        {
+                                            startPage = Math.Max(1, endPage - 4);
+                                        }
+                                    }
+
+                                    @for (int i = startPage; i <= endPage; i++)
+                                    {
+                                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                                            <a class="page-link" asp-action="Index"
+                                               asp-route-page="@i"
+                                               asp-route-searchQuery="@Model.SearchQuery"
+                                               asp-route-category="@Model.Category"
+                                               asp-route-realtyType="@Model.RealtyType"
+                                               asp-route-deal="@Model.Deal"
+                                               asp-route-locality="@Model.Locality"
+                                               asp-route-region="@Model.Region"
+                                               asp-route-minPrice="@Model.MinPrice"
+                                               asp-route-maxPrice="@Model.MaxPrice"
+                                               asp-route-currency="@Model.Currency"
+                                               asp-route-minRoomCount="@Model.MinRoomCount"
+                                               asp-route-maxRoomCount="@Model.MaxRoomCount"
+                                               asp-route-minAreaTotal="@Model.MinAreaTotal"
+                                               asp-route-maxAreaTotal="@Model.MaxAreaTotal"
+                                               asp-route-isNewBuilding="@Model.IsNewBuilding"
+                                               asp-route-sortOrder="@Model.SortOrder"
+                                               asp-route-pageSize="@Model.PageSize">@i</a>
+                                        </li>
+                                    }
+
+                                    <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" asp-action="Index"
+                                           asp-route-page="@Model.TotalPages"
+                                           asp-route-searchQuery="@Model.SearchQuery"
+                                           asp-route-category="@Model.Category"
+                                           asp-route-realtyType="@Model.RealtyType"
+                                           asp-route-deal="@Model.Deal"
+                                           asp-route-locality="@Model.Locality"
+                                           asp-route-region="@Model.Region"
+                                           asp-route-minPrice="@Model.MinPrice"
+                                           asp-route-maxPrice="@Model.MaxPrice"
+                                           asp-route-currency="@Model.Currency"
+                                           asp-route-minRoomCount="@Model.MinRoomCount"
+                                           asp-route-maxRoomCount="@Model.MaxRoomCount"
+                                           asp-route-minAreaTotal="@Model.MinAreaTotal"
+                                           asp-route-maxAreaTotal="@Model.MaxAreaTotal"
+                                           asp-route-isNewBuilding="@Model.IsNewBuilding"
+                                           asp-route-sortOrder="@Model.SortOrder"
+                                           asp-route-pageSize="@Model.PageSize">Last</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="mt-3">No properties found</h4>
+                            <p class="text-muted">Try adjusting your search criteria</p>
+                            <a asp-action="Index" class="btn btn-outline-primary">Clear all filters</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .property-card {
+            transition: transform 0.2s;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+            .property-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            }
+
+        .property-image {
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .property-image-placeholder {
+            height: 200px;
+            background-color: #f8f9fa;
+        }
+
+        .price {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+}
