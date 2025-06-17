@@ -97,27 +97,49 @@
                 </div>
             </div>
 
-            <!-- Location Map Placeholder -->
+            <!-- Location Map -->
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-map me-2"></i>Location</h5>
-                </div>
-                <div class="card-body">
-                    <div class="bg-light rounded p-4 text-center">
-                        <i class="bi bi-geo-alt text-muted" style="font-size: 2rem;"></i>
-                        <p class="mb-0 mt-2">
-                            @Model.Street, @Model.Borough<br>
-                            @Model.Locality, @Model.Region<br>
-                            @Model.Country
-                        </p>
-                        @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
-                        {
-                            <small class="text-muted">
-                                Coordinates: @Model.Latitude.Value.ToString("F6"), @Model.Longitude.Value.ToString("F6")
-                            </small>
-                        }
-                    </div>
-                </div>
+	            <div class="card-header">
+		            <h5 class="mb-0"><i class="bi bi-map me-2"></i>Location</h5>
+	            </div>
+	            <div class="card-body">
+		            <div class="row">
+			            <div class="col-md-6">
+				            <div class="mb-3">
+					            <strong>Address:</strong><br>
+					            @Model.Street, @Model.Borough<br>
+					            @Model.Locality, @Model.Region<br>
+					            @Model.Country
+				            </div>
+				            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+				            {
+					            <div class="mb-3">
+						            <small class="text-muted">
+							            <i class="bi bi-geo-alt me-1"></i>
+							            Coordinates: @Model.Latitude.Value.ToString("F6"), @Model.Longitude.Value.ToString("F6")
+						            </small>
+					            </div>
+				            }
+			            </div>
+			            <div class="col-md-6">
+				            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+				            {
+					            <!-- Інтерактивна карта -->
+					            <div id="map" style="height: 300px; width: 100%;" class="rounded"></div>
+				            }
+				            else
+				            {
+					            <!-- Заглушка якщо немає координат -->
+					            <div class="bg-light rounded p-4 text-center" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+						            <div>
+							            <i class="bi bi-geo-alt text-muted" style="font-size: 2rem;"></i>
+							            <p class="mb-0 mt-2 text-muted">Location coordinates not available</p>
+						            </div>
+					            </div>
+				            }
+			            </div>
+		            </div>
+	            </div>
             </div>
         </div>
 
@@ -275,7 +297,7 @@
 </div>
 
 @section Scripts {
-    <script>
+	<script>
         function confirmDelete(id) {
             if (confirm('Are you sure you want to delete this property?')) {
                 var form = document.createElement('form');
@@ -293,4 +315,83 @@
             }
         }
     </script>
+	
+    @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+    {
+        <!-- Google Maps API -->
+        <script async defer
+                src="https://maps.googleapis.com/maps/api/js?key=@ViewBag.GoogleMapsApiKey&callback=initMap">
+        </script>
+
+        <script>
+            let map;
+            let marker;
+
+            function initMap() {
+                const propertyLocation = {
+                    lat: @Model.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    lng: @Model.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                };
+
+                // Створити карту
+                map = new google.maps.Map(document.getElementById("map"), {
+                    zoom: 15,
+                    center: propertyLocation,
+                    mapTypeControl: true,
+                    streetViewControl: true,
+                    fullscreenControl: true,
+                    zoomControl: true,
+                    styles: [
+                        {
+                            featureType: "poi.business",
+                            stylers: [{ visibility: "off" }],
+                        },
+                    ]
+                });
+
+                // Створити маркер
+                marker = new google.maps.Marker({
+                    position: propertyLocation,
+                    map: map,
+                    title: "@Model.Title",
+                    animation: google.maps.Animation.DROP,
+                    icon: {
+                        url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#dc3545">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(32, 32),
+                        anchor: new google.maps.Point(16, 32)
+                    }
+                });
+
+                // Інформаційне вікно
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div style="max-width: 200px;">
+                            <h6 class="mb-2">@Model.Title</h6>
+                            <p class="mb-1 small">@Model.Street, @Model.Locality</p>
+                            <p class="mb-1 small text-primary fw-bold">@Model.Price.ToString("N0") @Model.Currency</p>
+                            <p class="mb-0 small">@Model.RoomCount rooms • @Model.AreaTotal m²</p>
+                        </div>
+                    `
+                });
+
+                // Показати інформаційне вікно при кліку на маркер
+                marker.addListener("click", () => {
+                    infoWindow.open(map, marker);
+                });
+
+                // Показати інформаційне вікно одразу
+                infoWindow.open(map, marker);
+            }
+
+            // Обробка помилок завантаження карти
+            window.gm_authFailure = function() {
+                document.getElementById('map').innerHTML =
+                    '<div class="alert alert-danger">Google Maps API authentication failed. Please check your API key.</div>';
+            }
+        </script>
+    }
 }

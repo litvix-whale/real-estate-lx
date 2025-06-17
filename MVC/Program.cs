@@ -20,6 +20,8 @@ Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration["GoogleMaps:ApiKey"] = Environment.GetEnvironmentVariable("GOOGLE_MAPS_API_KEY");
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -71,6 +73,8 @@ builder.Services.AddScoped<IRealEstateService, RealEstateService>();
 
 builder.Services.AddHttpClient<IXmlDataService, XmlDataService>();
 builder.Services.AddScoped<IXmlDataService, XmlDataService>();
+
+builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

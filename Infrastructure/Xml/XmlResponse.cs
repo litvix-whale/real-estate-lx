@@ -1,4 +1,5 @@
-﻿using System.Xml.Serialization;
+﻿using System.Globalization;
+using System.Xml.Serialization;
 
 [XmlRoot("response")]
 public class XmlResponse
@@ -165,8 +166,12 @@ public class XmlLocation
     [XmlElement("map_lng")]
     public string? MapLngString { get; set; }
 
-    public double? MapLat => double.TryParse(MapLatString, out var result) ? result : null;
-    public double? MapLng => double.TryParse(MapLngString, out var result) ? result : null;
+    public double? MapLat => double.TryParse(MapLatString, NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
+        ? result
+        : null;
+    public double? MapLng => double.TryParse(MapLngString, NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
+        ? result
+        : null;
 }
 
 public class XmlLocationItem

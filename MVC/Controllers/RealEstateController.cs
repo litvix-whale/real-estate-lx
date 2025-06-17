@@ -9,9 +9,10 @@ using Core.Xml;
 
 namespace MVC.Controllers
 {
-    public class RealEstateController(IRealEstateService realEstateService) : Controller
+    public class RealEstateController(IRealEstateService realEstateService, IGoogleMapsService googleMapsService) : Controller
     {
         private readonly IRealEstateService _realEstateService = realEstateService;
+        private readonly IGoogleMapsService _googleMapsService= googleMapsService;
 
         [HttpGet]
         public async Task<IActionResult> Index(string? searchQuery = "",
@@ -96,6 +97,8 @@ namespace MVC.Controllers
             {
                 return NotFound();
             }
+
+            ViewBag.GoogleMapsApiKey = _googleMapsService.GetApiKey();
 
             return View(realEstate);
         }
