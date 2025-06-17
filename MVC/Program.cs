@@ -83,12 +83,12 @@ using (var scope = app.Services.CreateScope())
         await using var asyncScope = services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
         var asyncServices = asyncScope.ServiceProvider;
 
-        //await DatabaseSeeder.SeedDatabase(
-        //    asyncServices.GetRequiredService<AppDbContext>(),
-        //    asyncServices.GetRequiredService<UserManager<User>>(),
-        //    asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
-        //    Env.GetString("ADMIN_PASSWORD")
-        //);
+        await DatabaseSeeder.SeedDatabase(
+            asyncServices.GetRequiredService<AppDbContext>(),
+            asyncServices.GetRequiredService<UserManager<User>>(),
+            asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
+            Env.GetString("ADMIN_PASSWORD")
+        );
     }
     catch (Exception ex)
     {
@@ -117,6 +117,6 @@ app.MapHub<NotificationHub>("/notificationHub");
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Post}/{action=Index}");
+    pattern: "{controller=RealEstate}/{action=Index}");
 
 app.Run();
