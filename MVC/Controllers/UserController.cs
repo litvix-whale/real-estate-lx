@@ -68,7 +68,7 @@ namespace MVC.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Users(string sortOrder = "", string searchTerm = "", string filter = "all", int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Users(string sortOrder = "", string searchTerm = "", string filter = "all", int page = 1, int pageSize = 9)
         {
             if (!User.IsInRole("Admin"))
             {

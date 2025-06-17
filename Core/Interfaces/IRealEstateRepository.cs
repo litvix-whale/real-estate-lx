@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Core.Entities;
-using Core.Models;
+using Core.Xml;
 
 namespace Core.Interfaces
 {

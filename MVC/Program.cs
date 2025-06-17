@@ -10,6 +10,10 @@ using Infrastructure.Repositories;
 using Logic.Hubs;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Infrastructure.Seed;
+using Infrastructure.Xml.Interfaces;
+using Infrastructure.Xml.Services;
+using Infrastructure.Xml.Configs;
+using Microsoft.Extensions.Options;
 
 
 Env.Load();
@@ -24,6 +28,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ? Env.GetString("LOCAL_CONNECTION_STRING")
         : Env.GetString("CONNECTION_STRING");
     options.UseNpgsql(connectionString);
+});
+
+// Конфігурувати XmlDataSettings з ENV
+builder.Services.Configure<XmlDataSettings>(options =>
+{
+    // Завантажити з appsettings
+    builder.Configuration.GetSection(XmlDataSettings.SectionName).Bind(options);
+
+    // Перезаписати FeedUrl з ENV
+    options.FeedUrl = Env.GetString("XML_FEED_URL");
 });
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
@@ -55,6 +69,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRealEstateRepository, RealEstateRepository>();
 builder.Services.AddScoped<IRealEstateService, RealEstateService>();
 
+builder.Services.AddHttpClient<IXmlDataService, XmlDataService>();
+builder.Services.AddScoped<IXmlDataService, XmlDataService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -82,11 +98,14 @@ using (var scope = app.Services.CreateScope())
 
         await using var asyncScope = services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
         var asyncServices = asyncScope.ServiceProvider;
+        var xmlSettings = asyncServices.GetRequiredService<IOptions<XmlDataSettings>>().Value;
 
         await DatabaseSeeder.SeedDatabase(
             asyncServices.GetRequiredService<AppDbContext>(),
             asyncServices.GetRequiredService<UserManager<User>>(),
             asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
+            asyncServices.GetRequiredService<IXmlDataService>(),
+            xmlSettings,
             Env.GetString("ADMIN_PASSWORD")
         );
     }

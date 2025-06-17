@@ -37,7 +37,7 @@ namespace MVC.Models
 
         // Пагінація та сортування
         public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
+        public int PageSize { get; set; } = 9;
         public string SortOrder { get; set; } = "date_desc";
 
         // Результати

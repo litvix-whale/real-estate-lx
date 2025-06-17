@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Core.Entities;
 using Core.Enums;
-using Core.Models;
+using Core.Xml;
 
 namespace MVC.Controllers
 {
@@ -30,7 +30,7 @@ namespace MVC.Controllers
             float? maxAreaTotal = null,
             string sortOrder = "date_desc",
             int page = 1,
-            int pageSize = 10)
+            int pageSize = 9)
         {
             var criteria = new RealEstateSearchCriteria
             {

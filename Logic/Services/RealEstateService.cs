@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
+using Core.Xml;
 
 namespace Logic.Services
 {

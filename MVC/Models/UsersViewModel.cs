@@ -8,7 +8,7 @@ public class UsersViewModel
 
     public int CurrentPage { get; set; } = 1;
     public int TotalPages { get; set; }
-    public int PageSize { get; set; } = 10;
+    public int PageSize { get; set; } = 9;
     public int TotalUsers { get; set; }
 
     public string CurrentFilter { get; set; } = string.Empty;

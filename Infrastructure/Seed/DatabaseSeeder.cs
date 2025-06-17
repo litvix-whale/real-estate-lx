@@ -7,6 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.Enums;
+using Core.Interfaces;
+using Infrastructure.Xml.Configs;
+using Infrastructure.Xml.Interfaces;
+
 
 namespace Infrastructure.Seed
 {
@@ -15,13 +19,15 @@ namespace Infrastructure.Seed
         public static async Task SeedDatabase(AppDbContext context,
             UserManager<User> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
+            IXmlDataService xmlDataService,
+            XmlDataSettings xmlSettings,
             string adminPassword)
         {
             await SeedRoles(roleManager);
 
             await SeedUsers(userManager, adminPassword);
 
-            await SeedRealEstates(context, userManager);
+            await SeedRealEstatesFromXml(context, userManager, xmlDataService, xmlSettings);
         }
 
         private static async Task SeedRoles(RoleManager<IdentityRole<Guid>> roleManager)
@@ -103,12 +109,58 @@ namespace Infrastructure.Seed
             }
         }
 
-        private static async Task SeedRealEstates(AppDbContext context, UserManager<User> userManager)
+        private static async Task SeedRealEstatesFromXml(AppDbContext context,
+            UserManager<User> userManager,
+            IXmlDataService xmlDataService,
+            XmlDataSettings xmlSettings)
         {
-            if (context.RealEstates.Any()) return;
+            if (context.RealEstates.Any())
+            {
+                Console.WriteLine("Real estate data already exists, skipping seeding");
+                return;
+            }
 
             var user = await userManager.FindByEmailAsync("john@example.com");
-            if (user == null) return;
+            if (user == null)
+            {
+                Console.WriteLine("Default user not found, cannot seed real estate data");
+                return;
+            }
+
+            if (!xmlSettings.EnableXmlSeeding)
+            {
+                Console.WriteLine("XML seeding is disabled, using static data");
+                await SeedStaticRealEstates(context, user);
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine("Starting XML data seeding with settings:");
+                Console.WriteLine($"  - Max items: {xmlSettings.MaxItemsToLoad}");
+                Console.WriteLine($"  - Batch size: {xmlSettings.BatchSize}");
+                Console.WriteLine($"  - Load from end: {xmlSettings.LoadFromEnd}");
+                Console.WriteLine($"  - Feed URL: {xmlSettings.FeedUrl}");
+
+                await xmlDataService.SeedRealEstateInBatchesAsync(context, user.Id);
+
+                var totalCount = await context.RealEstates.CountAsync();
+                Console.WriteLine($"XML seeding completed. Total real estate items in database: {totalCount}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during XML seeding: {ex.Message}");
+
+                if (xmlSettings.FallbackToStaticData)
+                {
+                    Console.WriteLine("Falling back to static seed data...");
+                    await SeedStaticRealEstates(context, user);
+                }
+            }
+        }
+
+        private static async Task SeedStaticRealEstates(AppDbContext context, User user)
+        {
 
             var estates = new List<RealEstate>
     {
@@ -139,8 +191,8 @@ namespace Infrastructure.Seed
             Currency = CurrencyEnum.USD,
             Images = new List<RealEstateImage>
             {
-                new() { Url = "https://.../image1.jpg", UiPriority = 0 },
-                new() { Url = "https://.../image2.jpg", UiPriority = 1 }
+                new() { Url = "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg", UiPriority = 0 },
+                new() { Url = "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg", UiPriority = 1 }
             },
             UserId = user.Id
         },
@@ -169,9 +221,9 @@ namespace Infrastructure.Seed
             Currency = CurrencyEnum.UAH,
             Images = new List<RealEstateImage>
             {
-                new() { Url = "https://.../image3.jpg", UiPriority = 0 },
-                new() { Url = "https://.../image4.jpg", UiPriority = 1 },
-                new() { Url = "https://.../image5.jpg", UiPriority = 2 }
+                new() { Url = "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg", UiPriority = 0 },
+                new() { Url = "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg", UiPriority = 1 },
+                new() { Url = "https://crm-08498194.s3.eu-west-1.amazonaws.com/zahid-rent/estate-images/eef2b874cce8e541ba533a107b08affb.jpg", UiPriority = 2 }
             },
             UserId = user.Id
         }
