@@ -6,13 +6,15 @@ using System.Security.Claims;
 using Core.Entities;
 using Core.Enums;
 using Core.Xml;
+using Infrastructure.Repositories;
 
 namespace MVC.Controllers
 {
-    public class RealEstateController(IRealEstateService realEstateService, IGoogleMapsService googleMapsService) : Controller
+    public class RealEstateController(IRealEstateService realEstateService, IGoogleMapsService googleMapsService, IRealEstateImageRepository realEstateImageRepository) : Controller
     {
         private readonly IRealEstateService _realEstateService = realEstateService;
         private readonly IGoogleMapsService _googleMapsService= googleMapsService;
+        private readonly IRealEstateImageRepository _realEstateImageRepository = realEstateImageRepository;
 
         [HttpGet]
         public async Task<IActionResult> Index(string? searchQuery = "",
@@ -106,7 +108,7 @@ namespace MVC.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateRealEstateViewModel model)
+        public async Task<IActionResult> Create(RealEstateViewCreateModel model)
         {
             if (ModelState.IsValid)
             {
@@ -223,7 +225,7 @@ namespace MVC.Controllers
         [Authorize]
         public async Task<IActionResult> Edit(Guid id)
         {
-            var realEstate = await _realEstateService.GetRealEstateByIdAsync(id);
+            var realEstate = await _realEstateService.GetRealEstateWithImagesAsync(id);
 
             if (realEstate == null)
             {
@@ -236,20 +238,106 @@ namespace MVC.Controllers
                 return Forbid();
             }
 
-            return View(realEstate);
+            // ✅ Конвертувати RealEstate в RealEstateViewCreateModel
+            var model = new RealEstateViewCreateModel
+            {
+                Id = realEstate.Id,
+                UserId = realEstate.UserId,
+                CreatedAt = realEstate.CreatedAt,
+                UpdatedAt = realEstate.UpdatedAt,
+                Title = realEstate.Title,
+                Description = realEstate.Description,
+                Category = realEstate.Category,
+                RealtyType = realEstate.RealtyType,
+                Deal = realEstate.Deal,
+                IsNewBuilding = realEstate.IsNewBuilding,
+                Country = realEstate.Country,
+                Region = realEstate.Region,
+                Locality = realEstate.Locality,
+                Borough = realEstate.Borough,
+                Street = realEstate.Street,
+                StreetType = realEstate.StreetType,
+                Latitude = realEstate.Latitude,
+                Longitude = realEstate.Longitude,
+                Floor = realEstate.Floor,
+                TotalFloors = realEstate.TotalFloors,
+                AreaTotal = (float)realEstate.AreaTotal,
+                AreaLiving = (float?)realEstate.AreaLiving,
+                AreaKitchen = (float?)realEstate.AreaKitchen,
+                RoomCount = realEstate.RoomCount,
+                NewBuildingName = realEstate.NewBuildingName,
+                Price = realEstate.Price,
+                Currency = realEstate.Currency,
+                ExistingImages = realEstate.Images?.ToList() ?? new List<RealEstateImage>()
+            };
+
+            return View(model);
         }
 
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(RealEstate model, List<IFormFile>? newImages, List<Guid>? removeImageIds)
+        public async Task<IActionResult> Edit(RealEstateViewCreateModel model)
         {
+            Console.WriteLine($"=== EDIT DEBUG START ===");
+            Console.WriteLine($"Model ID: {model.Id}");
+            Console.WriteLine($"Model Title: {model.Title}");
+            Console.WriteLine($"Model Price: {model.Price}");
+            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid}");
+
+            if (!ModelState.IsValid)
+            {
+                Console.WriteLine("=== MODEL STATE ERRORS ===");
+                foreach (var error in ModelState)
+                {
+                    Console.WriteLine($"{error.Key}: {string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage))}");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (Guid.TryParse(userId, out Guid userGuid) && model.UserId == userGuid)
+                if (!Guid.TryParse(userId, out Guid userGuid) || model.UserId != userGuid)
                 {
-                    var result = await _realEstateService.UpdateRealEstateAsync(model, newImages, removeImageIds);
+                    ModelState.AddModelError(string.Empty, "Unauthorized");
+                    return View(model);
+                }
+
+                try
+                {
+                    // ✅ Конвертувати RealEstateViewCreateModel в RealEstate
+                    var realEstate = new RealEstate
+                    {
+                        Id = model.Id ?? Guid.Empty,
+                        UserId = model.UserId ?? Guid.Empty,
+                        CreatedAt = model.CreatedAt ?? DateTime.UtcNow,
+                        UpdatedAt = model.UpdatedAt,
+                        Title = model.Title,
+                        Description = model.Description,
+                        Category = model.Category,
+                        RealtyType = model.RealtyType,
+                        Deal = model.Deal,
+                        IsNewBuilding = model.IsNewBuilding,
+                        Country = model.Country,
+                        Region = model.Region,
+                        Locality = model.Locality,
+                        Borough = model.Borough ?? string.Empty,
+                        Street = model.Street,
+                        StreetType = model.StreetType ?? string.Empty,
+                        Latitude = model.Latitude,
+                        Longitude = model.Longitude,
+                        Floor = model.Floor,
+                        TotalFloors = model.TotalFloors,
+                        AreaTotal = model.AreaTotal,
+                        AreaLiving = model.AreaLiving,
+                        AreaKitchen = model.AreaKitchen,
+                        RoomCount = model.RoomCount,
+                        NewBuildingName = model.NewBuildingName,
+                        Price = model.Price,
+                        Currency = model.Currency
+                    };
+
+                    var result = await _realEstateService.UpdateRealEstateAsync(realEstate, model.NewImages, model.RemoveImageIds);
 
                     if (result == "Success")
                     {
@@ -259,13 +347,60 @@ namespace MVC.Controllers
 
                     ModelState.AddModelError(string.Empty, result);
                 }
-                else
+                catch (Exception ex)
                 {
-                    ModelState.AddModelError(string.Empty, "Unauthorized");
+                    ModelState.AddModelError(string.Empty, $"Error updating property: {ex.Message}");
+                }
+            }
+
+            // Перезавантажити зображення при помилці
+            if (model.Id.HasValue)
+            {
+                var realEstateWithImages = await _realEstateService.GetRealEstateWithImagesAsync(model.Id.Value);
+                if (realEstateWithImages?.Images != null)
+                {
+                    model.ExistingImages = realEstateWithImages.Images.ToList();
                 }
             }
 
             return View(model);
+        }
+
+        private async Task<int> GetMaxImagePriority(Guid realEstateId)
+        {
+            var realEstate = await _realEstateService.GetRealEstateWithImagesAsync(realEstateId);
+            return realEstate?.Images?.Any() == true ? realEstate.Images.Max(i => i.UiPriority) : 0;
+        }
+
+        private async Task AddImageRecord(Guid realEstateId, string fileName, int priority)
+        {
+            var image = new RealEstateImage
+            {
+                RealEstateId = realEstateId,
+                Url = fileName,
+                UiPriority = priority
+            };
+
+            // Використайте ваш image repository
+            await _realEstateImageRepository.AddAsync(image);
+        }
+
+        private async Task DeleteImageFileAndRecord(Guid imageId)
+        {
+            // Отримати запис зображення
+            var image = await _realEstateImageRepository.GetByIdAsync(imageId);
+            if (image != null)
+            {
+                // Видалити файл з файлової системи
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", image.Url.TrimStart('/'));
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+
+                // Видалити запис з бази
+                await _realEstateImageRepository.DeleteAsync(imageId);
+            }
         }
 
         [HttpPost]
@@ -331,7 +466,7 @@ namespace MVC.Controllers
         [Authorize]
         public IActionResult Create()
         {
-            return View(new CreateRealEstateViewModel());
+            return View(new RealEstateViewCreateModel());
         }
 
 

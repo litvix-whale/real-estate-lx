@@ -1,6 +1,6 @@
 ﻿@using Core.Enums
 @using Microsoft.AspNetCore.Mvc.TagHelpers
-@model Core.Entities.RealEstate
+@model RealEstateViewCreateModel
 
 @{
     ViewData["Title"] = "Edit Property";
@@ -17,14 +17,16 @@
                 </div>
                 <div class="card-body">
                     <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <!-- ✅ Приховані поля -->
                         <input asp-for="Id" type="hidden" />
                         <input asp-for="UserId" type="hidden" />
                         <input asp-for="CreatedAt" type="hidden" />
+                        <input asp-for="UpdatedAt" type="hidden" />
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-                        <!-- Existing Images -->
-                        @if (Model.Images.Any())
+                        <!-- Існуючі зображення -->
+                        @if (Model.ExistingImages?.Any() == true)
                         {
                             <div class="row mb-4">
                                 <div class="col-12">
@@ -32,7 +34,7 @@
                                         <i class="bi bi-images me-2"></i>Current Images
                                     </h5>
                                     <div class="row" id="existingImages">
-                                        @foreach (var image in Model.Images.OrderBy(i => i.UiPriority))
+                                        @foreach (var image in Model.ExistingImages.OrderBy(i => i.UiPriority))
                                         {
                                             <div class="col-md-3 mb-3" data-image-id="@image.Id">
                                                 <div class="card">
@@ -40,7 +42,7 @@
                                                          style="height: 150px; object-fit: cover;" alt="Property image">
                                                     <div class="card-body p-2">
                                                         <div class="form-check">
-                                                            <input type="checkbox" name="removeImageIds"
+                                                            <input type="checkbox" name="RemoveImageIds"
                                                                    value="@image.Id" class="form-check-input remove-image-checkbox">
                                                             <label class="form-check-label text-danger">
                                                                 <small>Remove</small>
@@ -56,27 +58,26 @@
                             </div>
                         }
 
-                        <!-- Add New Images -->
+                        <!-- Додати нові зображення -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="text-primary mb-3">
                                     <i class="bi bi-plus-circle me-2"></i>Add New Images
                                 </h5>
                                 <div class="mb-3">
-                                    <input type="file" name="newImages" class="form-control" multiple accept="image/*"
+                                    <input asp-for="NewImages" class="form-control" multiple accept="image/*"
                                            id="newImageInput" />
                                     <div class="form-text">
                                         Add new images (JPEG, PNG, GIF, WebP). Maximum 5MB per image.
                                     </div>
                                 </div>
 
-                                <!-- New Image Preview -->
+                                <!-- Нові зображення preview -->
                                 <div id="newImagePreview" class="row"></div>
                             </div>
                         </div>
 
-                        <!-- Property Information (Same as Create form, but with existing values) -->
-                        <!-- Basic Information -->
+                        <!-- Основна інформація -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="text-primary mb-3">
@@ -93,7 +94,7 @@
                                 <select asp-for="Category" class="form-select">
                                     @foreach (var category in Enum.GetValues<RealEstateCategoryEnum>())
                                     {
-                                        <option value="@category" selected="@(Model.Category == category)">@category</option>
+                                        <option value="@category">@category</option>
                                     }
                                 </select>
                                 <span asp-validation-for="Category" class="text-danger"></span>
@@ -105,7 +106,7 @@
                             </div>
                         </div>
 
-                        <!-- Property Details (Similar structure to Create) -->
+                        <!-- Деталі властивості -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="text-primary mb-3">
@@ -115,9 +116,10 @@
                             <div class="col-md-6 mb-3">
                                 <label asp-for="RealtyType" class="form-label">Property Type <span class="text-danger">*</span></label>
                                 <select asp-for="RealtyType" class="form-select">
+                                    <option value="">Select Type</option>
                                     @foreach (var type in Enum.GetValues<RealEstateTypeEnum>())
                                     {
-                                        <option value="@type" selected="@(Model.RealtyType == type)">@type</option>
+                                        <option value="@type">@type</option>
                                     }
                                 </select>
                                 <span asp-validation-for="RealtyType" class="text-danger"></span>
@@ -125,17 +127,132 @@
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Deal" class="form-label">Deal Type <span class="text-danger">*</span></label>
                                 <select asp-for="Deal" class="form-select">
+                                    <option value="">Select Deal</option>
                                     @foreach (var deal in Enum.GetValues<DealTypeEnum>())
                                     {
-                                        <option value="@deal" selected="@(Model.Deal == deal)">@deal</option>
+                                        <option value="@deal">@deal</option>
                                     }
                                 </select>
                                 <span asp-validation-for="Deal" class="text-danger"></span>
                             </div>
-                            <!-- Continue with all other fields... -->
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="RoomCount" class="form-label">Rooms <span class="text-danger">*</span></label>
+                                <input asp-for="RoomCount" class="form-control" type="number" min="0" />
+                                <span asp-validation-for="RoomCount" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Floor" class="form-label">Floor <span class="text-danger">*</span></label>
+                                <input asp-for="Floor" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="Floor" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="TotalFloors" class="form-label">Total Floors <span class="text-danger">*</span></label>
+                                <input asp-for="TotalFloors" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="TotalFloors" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="AreaTotal" class="form-label">Total Area (m²) <span class="text-danger">*</span></label>
+                                <input asp-for="AreaTotal" class="form-control" type="number" step="0.1" min="0.1" />
+                                <span asp-validation-for="AreaTotal" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="AreaLiving" class="form-label">Living Area (m²)</label>
+                                <input asp-for="AreaLiving" class="form-control" type="number" step="0.1" min="0" />
+                                <span asp-validation-for="AreaLiving" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="AreaKitchen" class="form-label">Kitchen Area (m²)</label>
+                                <input asp-for="AreaKitchen" class="form-control" type="number" step="0.1" min="0" />
+                                <span asp-validation-for="AreaKitchen" class="text-danger"></span>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="IsNewBuilding" class="form-check-input" />
+                                    <label asp-for="IsNewBuilding" class="form-check-label">New Building</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3" id="newBuildingNameDiv" style="display: @(Model.IsNewBuilding ? "block" : "none");">
+                                <label asp-for="NewBuildingName" class="form-label">Building Name</label>
+                                <input asp-for="NewBuildingName" class="form-control" placeholder="Building complex name" />
+                                <span asp-validation-for="NewBuildingName" class="text-danger"></span>
+                            </div>
                         </div>
 
-                        <!-- Submit Buttons -->
+                        <!-- Локація -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-geo-alt me-2"></i>Location
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Country" class="form-label">Country <span class="text-danger">*</span></label>
+                                <input asp-for="Country" class="form-control" />
+                                <span asp-validation-for="Country" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Region" class="form-label">Region <span class="text-danger">*</span></label>
+                                <input asp-for="Region" class="form-control" />
+                                <span asp-validation-for="Region" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Locality" class="form-label">City <span class="text-danger">*</span></label>
+                                <input asp-for="Locality" class="form-control" />
+                                <span asp-validation-for="Locality" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Borough" class="form-label">Borough/District</label>
+                                <input asp-for="Borough" class="form-control" />
+                                <span asp-validation-for="Borough" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label asp-for="Street" class="form-label">Street <span class="text-danger">*</span></label>
+                                <input asp-for="Street" class="form-control" />
+                                <span asp-validation-for="Street" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="StreetType" class="form-label">Street Type</label>
+                                <input asp-for="StreetType" class="form-control" placeholder="St, Ave, Blvd" />
+                                <span asp-validation-for="StreetType" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Latitude" class="form-label">Latitude</label>
+                                <input asp-for="Latitude" class="form-control" type="number" step="any" />
+                                <span asp-validation-for="Latitude" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Longitude" class="form-label">Longitude</label>
+                                <input asp-for="Longitude" class="form-control" type="number" step="any" />
+                                <span asp-validation-for="Longitude" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Ціна -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-currency-dollar me-2"></i>Pricing
+                                </h5>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label asp-for="Price" class="form-label">Price <span class="text-danger">*</span></label>
+                                <input asp-for="Price" class="form-control" type="number" step="0.01" min="0.01" />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Currency" class="form-label">Currency <span class="text-danger">*</span></label>
+                                <select asp-for="Currency" class="form-select">
+                                    <option value="">Select Currency</option>
+                                    @foreach (var currency in Enum.GetValues<CurrencyEnum>())
+                                    {
+                                        <option value="@currency">@currency</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Currency" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
                         <div class="row">
                             <div class="col-12">
                                 <hr>
@@ -163,7 +280,15 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-        // Mark images for removal
+        // Показати/сховати назву будівлі
+        const isNewBuildingCheckbox = document.getElementById('IsNewBuilding');
+        const buildingNameDiv = document.getElementById('newBuildingNameDiv');
+
+        isNewBuildingCheckbox.addEventListener('change', function() {
+            buildingNameDiv.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Позначити зображення для видалення
         document.querySelectorAll('.remove-image-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const imageCard = this.closest('.card');
@@ -177,7 +302,7 @@
             });
         });
 
-        // New image preview (same as create form)
+        // Preview нових зображень
         document.getElementById('newImageInput').addEventListener('change', function() {
             const preview = document.getElementById('newImagePreview');
             preview.innerHTML = '';
@@ -204,5 +329,42 @@
                 });
             }
         });
+
+        // Валідація форми
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const floor = parseInt(document.getElementById('Floor').value);
+            const totalFloors = parseInt(document.getElementById('TotalFloors').value);
+
+            if (floor > totalFloors) {
+                e.preventDefault();
+                alert('Floor cannot be higher than total floors.');
+                return false;
+            }
+        });
     </script>
+}
+
+@section Styles {
+    <style>
+        .form-label {
+            font-weight: 600;
+        }
+
+        .text-danger {
+            font-size: 0.875em;
+        }
+
+        .card-header {
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+        }
+
+        .remove-image-checkbox:checked + label {
+            font-weight: bold;
+        }
+    </style>
 }

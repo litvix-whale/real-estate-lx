@@ -9,8 +9,17 @@ using System.Threading.Tasks;
 
 namespace MVC.Models
 {
-    public class CreateRealEstateViewModel
+    public class RealEstateViewCreateModel
     {
+        public Guid? Id { get; set; }
+        public Guid? UserId { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
+        public List<RealEstateImage>? ExistingImages { get; set; }
+
+        public List<Guid>? RemoveImageIds { get; set; }
+
         [Required(ErrorMessage = "Title is required")]
         [StringLength(200, ErrorMessage = "Title cannot exceed 200 characters")]
         public string Title { get; set; } = string.Empty;
@@ -89,5 +98,6 @@ namespace MVC.Models
 
         // Images
         public List<IFormFile>? Images { get; set; }
+        public List<IFormFile>? NewImages { get; set; }
     }
 }

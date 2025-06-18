@@ -7,14 +7,17 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Xml;
+using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http;
 
 namespace Logic.Services
 {
-    public class RealEstateService(IRealEstateRepository realEstateRepository, IRealEstateImageService imageService) : IRealEstateService
+    public class RealEstateService(IRealEstateRepository realEstateRepository, IRealEstateImageService imageService, IRealEstateImageRepository realEstateImageRepository) : IRealEstateService
     {
         private readonly IRealEstateRepository _realEstateRepository = realEstateRepository;
         private readonly IRealEstateImageService _imageService = imageService;
+        private readonly IRealEstateImageRepository _realEstateImageRepository = realEstateImageRepository;
+        
 
         public async Task<IEnumerable<RealEstate>> SearchRealEstateAsync(RealEstateSearchCriteria criteria)
         {
@@ -50,63 +53,109 @@ namespace Logic.Services
             }
         }
 
-        public async Task<string> UpdateRealEstateAsync(RealEstate realEstate)
-        {
-            try
-            {
-                realEstate.UpdatedAt = DateTime.UtcNow;
-                await _realEstateRepository.UpdateAsync(realEstate);
-                return "Success";
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
-        }
-
-
         public async Task<IEnumerable<RealEstate>> GetUserRealEstatesAsync(Guid userId)
         {
             return await _realEstateRepository.GetByUserIdAsync(userId);
         }
 
-        public async Task<string> UpdateRealEstateAsync(RealEstate realEstate, List<IFormFile>? newImages, List<Guid>? removeImageIds)
+        public async Task<string> UpdateRealEstateAsync(RealEstate realEstate, List<IFormFile>? newImages = null, List<Guid>? removeImageIds = null)
         {
             try
             {
-                // Перевірити що об'єкт існує
                 var existingProperty = await _realEstateRepository.GetByIdAsync(realEstate.Id);
                 if (existingProperty == null)
                 {
                     return "Property not found.";
                 }
 
-                // Валідація
                 var validationResult = ValidateRealEstate(realEstate);
                 if (validationResult != "Success")
                 {
                     return validationResult;
                 }
 
-                realEstate.UpdatedAt = DateTime.UtcNow;
-                await _realEstateRepository.UpdateAsync(realEstate);
+                existingProperty.Title = realEstate.Title;
+                existingProperty.Description = realEstate.Description;
+                existingProperty.Category = realEstate.Category;
+                existingProperty.RealtyType = realEstate.RealtyType;
+                existingProperty.Deal = realEstate.Deal;
+                existingProperty.IsNewBuilding = realEstate.IsNewBuilding;
+                existingProperty.Country = realEstate.Country;
+                existingProperty.Region = realEstate.Region;
+                existingProperty.Locality = realEstate.Locality;
+                existingProperty.Borough = realEstate.Borough;
+                existingProperty.Street = realEstate.Street;
+                existingProperty.StreetType = realEstate.StreetType;
+                existingProperty.Latitude = realEstate.Latitude;
+                existingProperty.Longitude = realEstate.Longitude;
+                existingProperty.Floor = realEstate.Floor;
+                existingProperty.TotalFloors = realEstate.TotalFloors;
+                existingProperty.AreaTotal = realEstate.AreaTotal;
+                existingProperty.AreaLiving = realEstate.AreaLiving;
+                existingProperty.AreaKitchen = realEstate.AreaKitchen;
+                existingProperty.RoomCount = realEstate.RoomCount;
+                existingProperty.NewBuildingName = realEstate.NewBuildingName;
+                existingProperty.Price = realEstate.Price;
+                existingProperty.Currency = realEstate.Currency;
+                existingProperty.UpdatedAt = DateTime.UtcNow;
 
-                // Видалити зображення якщо потрібно
+                await _realEstateRepository.UpdateAsync(existingProperty);
+                Console.WriteLine("Repository.UpdateAsync completed");
+
+                // 4. Обробка зображень...
+                Console.WriteLine($"=== PROCESSING IMAGES ===");
+                Console.WriteLine($"Remove IDs: {removeImageIds?.Count ?? 0}");
+                Console.WriteLine($"New Images: {newImages?.Count ?? 0}");
+
+
                 if (removeImageIds != null && removeImageIds.Any())
                 {
                     foreach (var imageId in removeImageIds)
                     {
-                        await _imageService.DeleteImageAsync(imageId);
+                        var image = await _realEstateImageRepository.GetByIdAsync(imageId);
+                        if (image != null)
+                        {
+                            // Видалити файл з диску
+                            DeleteImageFile(image.Url);
+
+                            // Видалити з БД
+                            await _realEstateImageRepository.DeleteAsync(imageId);
+                        }
                     }
                 }
 
-                // Додати нові зображення якщо є
+                // 5. Додати нові зображення
                 if (newImages != null && newImages.Any())
                 {
-                    var imageResult = await _imageService.AddImagesAsync(realEstate.Id, newImages);
-                    if (imageResult != "Success")
+                    // Отримати максимальний пріоритет
+                    var existingImages = await _realEstateImageRepository.GetImagesByRealEstateIdAsync(realEstate.Id);
+                    var maxPriority = existingImages.Any() ? existingImages.Max(i => i.UiPriority) : 0;
+                    var priority = maxPriority + 1;
+
+                    foreach (var imageFile in newImages)
                     {
-                        return $"Property updated but failed to save new images: {imageResult}";
+                        if (imageFile.Length > 0)
+                        {
+                            // Валідація
+                            var (isValid, errorMessage) = ValidateImageFile(imageFile);
+                            if (!isValid)
+                            {
+                                return errorMessage;
+                            }
+
+                            // Зберегти файл
+                            var fileName = await SaveImageFileAsync(imageFile);
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                // Додати до БД
+                                await _realEstateImageRepository.AddAsync(new RealEstateImage
+                                {
+                                    Url = fileName,
+                                    UiPriority = priority++,
+                                    RealEstateId = realEstate.Id
+                                });
+                            }
+                        }
                     }
                 }
 
@@ -115,6 +164,24 @@ namespace Logic.Services
             catch (Exception ex)
             {
                 return $"Failed to update property. Error: {ex.Message}";
+            }
+        }
+
+        private void DeleteImageFile(string? imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl)) return;
+
+            try
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", imageUrl.TrimStart('/'));
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch
+            {
+                // TODO
             }
         }
 
@@ -144,6 +211,58 @@ namespace Logic.Services
             {
                 return $"Failed to delete property. Error: {ex.Message}";
             }
+        }
+
+        private async Task<string?> SaveImageFileAsync(IFormFile imageFile)
+        {
+            try
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "properties");
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + imageFile.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+
+                return "/images/properties/" + uniqueFileName;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static (bool isValid, string errorMessage) ValidateImageFile(IFormFile file)
+        {
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (file.Length > maxFileSize)
+            {
+                return (false, "Image size exceeds maximum limit of 5MB.");
+            }
+
+            var allowedImageTypes = new[]
+            {
+                "image/jpeg",
+                "image/jpg",
+                "image/png",
+                "image/gif",
+                "image/webp"
+            };
+
+            if (!allowedImageTypes.Contains(file.ContentType))
+            {
+                return (false, "Invalid image type. Only JPEG, PNG, GIF, and WebP are allowed.");
+            }
+
+            return (true, string.Empty);
         }
 
         public async Task<string> AddImagesToPropertyAsync(Guid realEstateId, List<IFormFile> images)
