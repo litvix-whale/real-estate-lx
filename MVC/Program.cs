@@ -8,40 +8,52 @@ using Logic.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Infrastructure.Repositories;
 using Logic.Hubs;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Infrastructure.Seed;
 using Infrastructure.Xml.Interfaces;
 using Infrastructure.Xml.Services;
 using Infrastructure.Xml.Configs;
 using Microsoft.Extensions.Options;
 
-
-Env.Load();
-
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration["GoogleMaps:ApiKey"] = Environment.GetEnvironmentVariable("GOOGLE_MAPS_API_KEY");
+// Завантаження .env тільки в Development
+if (builder.Environment.IsDevelopment())
+{
+    Env.Load();
+}
 
-// Add services to the container.
+// Конфігурація Google Maps API
+builder.Configuration["GoogleMaps:ApiKey"] =
+    Environment.GetEnvironmentVariable("GOOGLE_MAPS_API_KEY") ??
+    builder.Configuration["GoogleMaps:ApiKey"];
+
 builder.Services.AddControllersWithViews();
+
+// Database конфігурація
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connectionString = builder.Environment.IsDevelopment()
-        ? Env.GetString("LOCAL_CONNECTION_STRING")
-        : Env.GetString("CONNECTION_STRING");
+        ? Environment.GetEnvironmentVariable("LOCAL_CONNECTION_STRING")
+        : Environment.GetEnvironmentVariable("CONNECTION_STRING") ??
+          builder.Configuration.GetConnectionString("DefaultConnection");
+
     options.UseNpgsql(connectionString);
+
+    // Відключення sensitive logging в Production
+    if (builder.Environment.IsProduction())
+    {
+        options.EnableSensitiveDataLogging(false);
+    }
 });
 
-// Конфігурувати XmlDataSettings з ENV
+// XML Settings
 builder.Services.Configure<XmlDataSettings>(options =>
 {
-    // Завантажити з appsettings
     builder.Configuration.GetSection(XmlDataSettings.SectionName).Bind(options);
-
-    // Перезаписати FeedUrl з ENV
-    options.FeedUrl = Env.GetString("XML_FEED_URL");
+    options.FeedUrl = Environment.GetEnvironmentVariable("XML_FEED_URL") ?? options.FeedUrl;
 });
 
+// Identity
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -54,6 +66,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
+// Cookie конфігурація
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
@@ -61,23 +74,28 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.SlidingExpiration = true;
+
+    // Secure cookies в Production
+    if (builder.Environment.IsProduction())
+    {
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+    }
 });
 
 builder.Services.AddSignalR();
 
-
+// Dependency Injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-
 builder.Services.AddScoped<IRealEstateRepository, RealEstateRepository>();
 builder.Services.AddScoped<IRealEstateImageRepository, RealEstateImageRepository>();
 builder.Services.AddScoped<IRealEstateService, RealEstateService>();
 builder.Services.AddScoped<IRealEstateImageService, RealEstateImageService>();
+builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 
 builder.Services.AddHttpClient<IXmlDataService, XmlDataService>();
 builder.Services.AddScoped<IXmlDataService, XmlDataService>();
-
-builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -87,60 +105,68 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorization();
 
-
 var app = builder.Build();
 
-// Initialize database and seed data
+// Database ініціалізація
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
     try
     {
         var dbContext = services.GetRequiredService<AppDbContext>();
+
+        // Міграція БД
+        if (app.Environment.IsProduction())
+        {
+            logger.LogInformation("Running database migrations...");
+            await dbContext.Database.MigrateAsync();
+        }
+        else
+        {
+            dbContext.Database.Migrate();
+        }
+
+        // Seeding даних
         var userManager = services.GetRequiredService<UserManager<User>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
-        // Apply migrations synchronously first
-        dbContext.Database.Migrate();
-
-        await using var asyncScope = services.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
-        var asyncServices = asyncScope.ServiceProvider;
-        var xmlSettings = asyncServices.GetRequiredService<IOptions<XmlDataSettings>>().Value;
+        var xmlDataService = services.GetRequiredService<IXmlDataService>();
+        var xmlSettings = services.GetRequiredService<IOptions<XmlDataSettings>>().Value;
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "DefaultAdmin123!";
 
         await DatabaseSeeder.SeedDatabase(
-            asyncServices.GetRequiredService<AppDbContext>(),
-            asyncServices.GetRequiredService<UserManager<User>>(),
-            asyncServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
-            asyncServices.GetRequiredService<IXmlDataService>(),
+            dbContext,
+            userManager,
+            roleManager,
+            xmlDataService,
             xmlSettings,
-            Env.GetString("ADMIN_PASSWORD")
+            adminPassword
         );
+
+        logger.LogInformation("Database initialization completed successfully");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Seeding failed");
+        logger.LogError(ex, "An error occurred during database initialization");
+        throw; // Fail fast in case of critical errors
     }
 }
 
-// Configure the HTTP request pipeline.
+// Configure pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHub<NotificationHub>("/notificationHub");
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=RealEstate}/{action=Index}");
