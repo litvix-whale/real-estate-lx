@@ -34,7 +34,7 @@ jobs:
       
     - name: 📤 Publish application
       run: |
-        dotnet publish --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        dotnet publish ./MVC/MVC.csproj --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
         
     - name: 🚀 Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
