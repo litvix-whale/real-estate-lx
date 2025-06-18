@@ -15,6 +15,11 @@ namespace Infrastructure.Repositories
                 .Include(r => r.User)
                 .AsQueryable();
 
+            if (criteria.UserId.HasValue)
+            {
+                query = query.Where(r => r.UserId == criteria.UserId.Value);
+            }
+
             // Застосування фільтрів
             query = ApplyFilters(query, criteria);
 
@@ -31,6 +36,12 @@ namespace Infrastructure.Repositories
         public async Task<int> GetSearchCountAsync(RealEstateSearchCriteria criteria)
         {
             var query = _context.RealEstates.AsQueryable();
+
+            if (criteria.UserId.HasValue)
+            {
+                query = query.Where(r => r.UserId == criteria.UserId.Value);
+            }
+
             query = ApplyFilters(query, criteria);
             return await query.CountAsync();
         }

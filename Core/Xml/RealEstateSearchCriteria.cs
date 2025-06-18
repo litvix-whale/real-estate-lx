@@ -9,6 +9,8 @@ namespace Core.Xml
 {
     public class RealEstateSearchCriteria
     {
+        public Guid? UserId { get; set; }
+        
         public string? SearchQuery { get; set; }
         public RealEstateCategoryEnum? Category { get; set; }
         public RealEstateTypeEnum? RealtyType { get; set; }

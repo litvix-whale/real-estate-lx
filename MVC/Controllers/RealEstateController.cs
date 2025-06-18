@@ -443,20 +443,6 @@ namespace MVC.Controllers
             return RedirectToAction("Index");
         }
 
-        [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> MyRealEstates()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!Guid.TryParse(userId, out Guid userGuid))
-            {
-                return Forbid();
-            }
-
-            var realEstates = await _realEstateService.GetUserRealEstatesAsync(userGuid);
-            return View(realEstates);
-        }
-
         private string GetSortField(string sortOrder)
         {
             return sortOrder switch
@@ -729,6 +715,90 @@ namespace MVC.Controllers
 
             ViewBag.IsAdminEdit = true;
             return View("Edit", model);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> MyRealEstates(string? searchQuery = "",
+    RealEstateCategoryEnum? category = null,
+    RealEstateTypeEnum? realtyType = null,
+    DealTypeEnum? deal = null,
+    bool? isNewBuilding = null,
+    string? locality = "",
+    string? region = "",
+    int? minPrice = null,
+    int? maxPrice = null,
+    CurrencyEnum? currency = null,
+    int? minRoomCount = null,
+    int? maxRoomCount = null,
+    float? minAreaTotal = null,
+    float? maxAreaTotal = null,
+    string sortOrder = "date_desc",
+    int page = 1,
+    int pageSize = 9)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userId, out Guid userGuid))
+            {
+                return Forbid();
+            }
+
+            // ✅ Створити критерії пошуку тільки для поточного користувача
+            var criteria = new RealEstateSearchCriteria
+            {
+                UserId = userGuid, // ✅ ВАЖЛИВО: Фільтрувати тільки по поточному користувачу
+                SearchQuery = searchQuery,
+                Category = category,
+                RealtyType = realtyType,
+                Deal = deal,
+                IsNewBuilding = isNewBuilding,
+                Locality = locality,
+                Region = region,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice,
+                Currency = currency,
+                MinRoomCount = minRoomCount,
+                MaxRoomCount = maxRoomCount,
+                MinAreaTotal = minAreaTotal,
+                MaxAreaTotal = maxAreaTotal,
+                SortBy = GetSortField(sortOrder),
+                SortDescending = GetSortDirection(sortOrder),
+                Skip = (page - 1) * pageSize,
+                Take = pageSize
+            };
+
+            var realEstates = await _realEstateService.SearchRealEstateAsync(criteria);
+            var totalItems = await _realEstateService.GetSearchCountAsync(criteria);
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var model = new MyRealEstatesViewModel
+            {
+                SearchQuery = searchQuery,
+                Category = category,
+                RealtyType = realtyType,
+                Deal = deal,
+                IsNewBuilding = isNewBuilding,
+                Locality = locality,
+                Region = region,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice,
+                Currency = currency,
+                MinRoomCount = minRoomCount,
+                MaxRoomCount = maxRoomCount,
+                MinAreaTotal = minAreaTotal,
+                MaxAreaTotal = maxAreaTotal,
+                SortOrder = sortOrder,
+                Page = page,
+                PageSize = pageSize,
+                RealEstates = realEstates,
+                TotalPages = totalPages,
+                TotalItems = totalItems,
+                UserId = userGuid
+            };
+
+            return View(model);
         }
     }
 }

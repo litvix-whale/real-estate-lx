@@ -1,0 +1,397 @@
+﻿@using Core.Enums
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model MyRealEstatesViewModel
+@{
+    ViewData["Title"] = "My Properties";
+}
+
+<div class="container-fluid py-4">
+    <!-- Заголовок та статистика -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <h2 class="text-primary mb-3 mb-md-0">
+                    <i class="bi bi-house-heart me-2"></i>My Properties
+                </h2>
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Property
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистичні картки -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.TotalItems</h4>
+                            <p class="mb-0">Total Properties</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-houses" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.ForSale</h4>
+                            <p class="mb-0">For Sale</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-tag" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.ForRent</h4>
+                            <p class="mb-0">For Rent</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-key" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.ActiveListings</h4>
+                            <p class="mb-0">Active Listings</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-activity" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фільтри -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-funnel me-2"></i>Filter My Properties
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="filtersCollapse">
+                    <div class="card-body">
+                        <form method="get" asp-action="MyRealEstates">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Search in my properties</label>
+                                    <input name="searchQuery" value="@Model.SearchQuery" class="form-control" placeholder="Title, location..." />
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Category</label>
+                                    <select name="category" class="form-select">
+                                        <option value="">All Categories</option>
+                                        @foreach (var cat in Enum.GetValues<RealEstateCategoryEnum>())
+                                        {
+                                            <option value="@cat" selected="@(Model.Category == cat)">@cat</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Deal Type</label>
+                                    <select name="deal" class="form-select">
+                                        <option value="">All Deals</option>
+                                        @foreach (var deal in Enum.GetValues<DealTypeEnum>())
+                                        {
+                                            <option value="@deal" selected="@(Model.Deal == deal)">@deal</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Sort By</label>
+                                    <select name="sortOrder" class="form-select">
+                                        <option value="date_desc" selected="@(Model.SortOrder == "date_desc")">Newest First</option>
+                                        <option value="date_asc" selected="@(Model.SortOrder == "date_asc")">Oldest First</option>
+                                        <option value="price_desc" selected="@(Model.SortOrder == "price_desc")">Price High to Low</option>
+                                        <option value="price_asc" selected="@(Model.SortOrder == "price_asc")">Price Low to High</option>
+                                        <option value="area_desc" selected="@(Model.SortOrder == "area_desc")">Largest Area</option>
+                                        <option value="area_asc" selected="@(Model.SortOrder == "area_asc")">Smallest Area</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1 mb-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <div class="col-md-2 mb-3 d-flex align-items-end">
+                                    <a asp-action="MyRealEstates" class="btn btn-outline-secondary w-100">
+                                        <i class="bi bi-arrow-clockwise me-1"></i>Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список об'єктів -->
+    <div class="row">
+        @if (Model.RealEstates.Any())
+        {
+            @foreach (var property in Model.RealEstates)
+            {
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <!-- Зображення -->
+                        <div class="position-relative">
+                            @if (property.Images?.Any() == true)
+                            {
+                                <img src="@property.Images.OrderBy(i => i.UiPriority).First().Url"
+                                     class="card-img-top" style="height: 220px; object-fit: cover;" alt="Property image">
+                            }
+                            else
+                            {
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 220px;">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                            }
+
+                            <!-- Бейджи -->
+                            <div class="position-absolute top-0 start-0 p-2">
+                                <span class="badge bg-@(property.Deal == DealTypeEnum.Sale ? "success" : "info")">
+                                    @property.Deal
+                                </span>
+                                @if (property.IsNewBuilding)
+                                {
+                                    <span class="badge bg-warning text-dark">New Building</span>
+                                }
+                            </div>
+
+                            <!-- Кількість зображень -->
+                            @if (property.Images?.Count() > 1)
+                            {
+                                <div class="position-absolute bottom-0 end-0 p-2">
+                                    <span class="badge bg-dark bg-opacity-75">
+                                        <i class="bi bi-images me-1"></i>@property.Images.Count()
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title text-truncate" title="@property.Title">@property.Title</h5>
+
+                            <!-- Локація -->
+                            <p class="card-text text-muted small mb-2">
+                                <i class="bi bi-geo-alt me-1"></i>@property.Locality, @property.Region
+                            </p>
+
+                            <!-- Характеристики -->
+                            <div class="row small text-muted mb-3">
+                                <div class="col-4">
+                                    <i class="bi bi-door-open me-1"></i>@property.RoomCount rooms
+                                </div>
+                                <div class="col-4">
+                                    <i class="bi bi-arrows-fullscreen me-1"></i>@property.AreaTotal m²
+                                </div>
+                                <div class="col-4">
+                                    <i class="bi bi-building me-1"></i>@property.Floor/@property.TotalFloors fl.
+                                </div>
+                            </div>
+
+                            <!-- Ціна -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="text-success mb-0">@property.Price.ToString("C") @property.Currency</h6>
+                                <small class="text-muted">@property.Category</small>
+                            </div>
+
+                            <!-- Дата створення -->
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Created: @property.CreatedAt.ToString("MMM dd, yyyy")
+                                    @if (property.UpdatedAt.HasValue)
+                                    {
+                                    <br>
+                                    Updated:
+                                    @property.UpdatedAt.Value.ToString("MMM dd, yyyy");
+                                    }
+                                </small>
+                            </p>
+                        </div>
+
+                        <!-- Дії -->
+                        <div class="card-footer bg-transparent border-0">
+                            <div class="d-grid gap-2">
+                                <div class="btn-group" role="group">
+                                    <a asp-action="Details" asp-route-id="@property.Id" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye me-1"></i>View
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@property.Id" class="btn btn-outline-warning btn-sm">
+                                        <i class="bi bi-pencil me-1"></i>Edit
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal-@property.Id">
+                                        <i class="bi bi-trash me-1"></i>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal для видалення -->
+                <div class="modal fade" id="deleteModal-@property.Id" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Confirm Delete</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete "<strong>@property.Title</strong>"?</p>
+                                <p class="text-muted small">This action cannot be undone.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form asp-action="Delete" asp-route-id="@property.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash me-1"></i>Delete Property
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-house text-muted" style="font-size: 5rem;"></i>
+                    <h3 class="text-muted mt-3">No properties found</h3>
+                    @if (!string.IsNullOrEmpty(Model.SearchQuery) || Model.Category.HasValue || Model.Deal.HasValue)
+                    {
+                        <p class="text-muted">Try adjusting your filters or search criteria.</p>
+                        <a asp-action="MyRealEstates" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Clear Filters
+                        </a>
+                    }
+                    else
+                    {
+                        <p class="text-muted">You haven't added any properties yet.</p>
+                        <a asp-action="Create" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-2"></i>Add Your First Property
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Пагінація -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="My properties pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                @if (Model.Page > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="MyRealEstates"
+                           asp-route-searchQuery="@Model.SearchQuery"
+                           asp-route-category="@Model.Category"
+                           asp-route-deal="@Model.Deal"
+                           asp-route-sortOrder="@Model.SortOrder"
+                           asp-route-page="@(Model.Page - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                }
+
+                @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                {
+                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-action="MyRealEstates"
+                           asp-route-searchQuery="@Model.SearchQuery"
+                           asp-route-category="@Model.Category"
+                           asp-route-deal="@Model.Deal"
+                           asp-route-sortOrder="@Model.SortOrder"
+                           asp-route-page="@i">@i</a>
+                    </li>
+                }
+
+                @if (Model.Page < Model.TotalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="MyRealEstates"
+                           asp-route-searchQuery="@Model.SearchQuery"
+                           asp-route-category="@Model.Category"
+                           asp-route-deal="@Model.Deal"
+                           asp-route-sortOrder="@Model.SortOrder"
+                           asp-route-page="@(Model.Page + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Автоматично розгорнути фільтри якщо є активні фільтри
+        document.addEventListener('DOMContentLoaded', function() {
+            const hasActiveFilters = @((!string.IsNullOrEmpty(Model.SearchQuery) || Model.Category.HasValue || Model.Deal.HasValue).ToString().ToLower());
+            if (hasActiveFilters) {
+                const filtersCollapse = new bootstrap.Collapse('#filtersCollapse', {
+                    show: true
+                });
+            }
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+            }
+
+        .bg-opacity-75 {
+            background-color: rgba(0,0,0,0.75) !important;
+        }
+
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+}
