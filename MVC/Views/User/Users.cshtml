@@ -39,10 +39,6 @@
                                    class="btn @(Model.StatusFilter == "active" ? "btn-primary" : "btn-outline-primary")">
                                     Active
                                 </a>
-                                <a asp-action="Users" asp-route-filter="banned" asp-route-searchTerm="@Model.CurrentFilter"
-                                   class="btn @(Model.StatusFilter == "banned" ? "btn-primary" : "btn-outline-primary")">
-                                    Banned
-                                </a>
                             </div>
                             <div class="d-flex align-items-center" style="padding-left: 5px;">
                                 <span class="badge bg-light text-primary">@Model.TotalUsers users</span>
@@ -88,87 +84,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if (Model.Users.Any())
-                                {
-                                    @foreach (var user in Model.Users)
-                                    {
-                                        <tr class="@(user.BannedTo.HasValue && user.BannedTo > DateTime.UtcNow ? "banned-user-row" : "")">
-                                            <td class="align-middle">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="user-avatar me-2">
-                                                        <img src="~/assets/profile_pictures/@user.ProfilePicture" alt="User Avatar"
-                                                             class="rounded-circle" alt="Profile" width="32" height="32">
-                                                    </div>
-                                                    <div>
-                                                        <div>@user.UserName</div>
-                                                        <small class="text-muted">@user.Email</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <small>@(user.CreatedAt.ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture) ?? "N/A")</small>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                @if (user.BannedTo.HasValue)
-                                                {
-                                                    @if (user.BannedTo > DateTime.UtcNow)
-                                                    {
-                                                        <span class="badge bg-warning text-dark">Banned until @user.BannedTo.Value.ToString("MMM dd, yyyy")</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-success">Active (was banned to: @user.BannedTo.Value.ToString("MMM dd, yyyy"))</span>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-success">Active</span>
-                                                }
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                                        Actions
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        @if (!user.BannedTo.HasValue || user.BannedTo < DateTime.UtcNow)
-                                                        {
-                                                            <li>
-                                                                <form asp-action="Ban" asp-controller="User" method="post">
-                                                                    <input type="hidden" name="email" value="@user.UserName" />
-                                                                    <button type="submit" class="dropdown-item text-warning">
-                                                                        <i class="bi bi-slash-circle me-1"></i> Ban User
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        }
-                                                        else
-                                                        {
-                                                            <li>
-                                                                <form asp-action="UnbanUser" asp-controller="User" method="post">
-                                                                    <input type="hidden" name="email" value="@user.UserName" />
-                                                                    <button type="submit" class="dropdown-item text-success">
-                                                                        <i class="bi bi-check-circle me-1"></i> Unban User
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        }
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <button type="button" class="dropdown-item text-danger delete-btn"
-                                                                    data-email="@user.UserName">
-                                                                <i class="bi bi-trash me-1"></i> Delete User
-                                                            </button>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
                                     <tr>
                                         <td colspan="4" class="text-center py-4">
                                             <div class="d-flex flex-column align-items-center">
@@ -178,7 +93,6 @@
                                             </div>
                                         </td>
                                     </tr>
-                                }
                             </tbody>
                         </table>
                     </div>
@@ -299,19 +213,4 @@
             });
         });
     </script>
-
-    <style>
-        .banned-user-row {
-            background-color: #fff3cd;
-            color: #664d03;
-        }
-
-            .banned-user-row td {
-                color: #664d03;
-            }
-
-            .banned-user-row small {
-                color: #997404 !important;
-            }
-    </style>
 }
