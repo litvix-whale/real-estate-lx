@@ -25,7 +25,7 @@ namespace MVC.Controllers
 
                 if (result == "Success")
                 {
-                    return RedirectToAction("Index", "Post");
+                    return RedirectToAction("Index", "RealEstate");
                 }
 
                 ModelState.AddModelError(string.Empty, result);
@@ -49,7 +49,7 @@ namespace MVC.Controllers
 
                 if (result == "Success")
                 {
-                    return RedirectToAction("Index", "Post");
+                    return RedirectToAction("Index", "RealEstate");
                 }
 
                 ModelState.AddModelError(string.Empty, result);
@@ -63,7 +63,7 @@ namespace MVC.Controllers
         public async Task<IActionResult> Logout()
         {
             await _userService.LogoutUserAsync();
-            return RedirectToAction("Index", "Post");
+            return RedirectToAction("Index", "RealEstate");
         }
 
         [HttpGet]
@@ -150,21 +150,6 @@ namespace MVC.Controllers
         public async Task<IActionResult> BanUser(string email, DateTime? bannedTo)
         {
             var result = await _userService.BanUserAsync(email, bannedTo);
-
-            if (result == "Success")
-            {
-                return RedirectToAction("Users", "User");
-            }
-
-            ModelState.AddModelError(string.Empty, result);
-            return RedirectToAction("Users", "User");
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UnbanUserAsync(string email)
-        {
-            var result = await _userService.UnbanUserAsync(email);
 
             if (result == "Success")
             {
