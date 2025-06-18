@@ -69,47 +69,5 @@
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
     @await RenderSectionAsync("Styles", required: false)
-    <script>
-        $(document).ready(function() {
-            @if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                <text>
-                // Load initial notification count
-                loadNotificationCount();
-
-                // Set up SignalR
-                const connection = new signalR.HubConnectionBuilder()
-                    .withUrl("/notificationHub")
-                    .withAutomaticReconnect()
-                    .build();
-
-                // Add handler for receiving notifications
-                connection.on("ReceiveNotification", function(message) {
-                    console.log("Notification received:", message);
-                    showToast(message);
-                    loadNotificationCount();
-                });
-
-                // Start the connection
-                connection.start()
-                    .then(() => console.log("SignalR Connected"))
-                    .catch(err => console.error("SignalR Connection Error:", err));
-
-
-                // Function to update the badge directly
-                function updateNotificationBadge(count) {
-                    const badge = $('#notification-badge');
-                    badge.html(count > 99 ? '99+' : count.toString());
-                    badge.toggle(count > 0); // Show/hide based on count
-                }
-
-                // Function to show toast notification (unchanged)
-                function showToast(message) {
-                    // ... existing toast code ...
-                }
-                </text>
-            }
-        });
-    </script>
 </body>
 </html>
