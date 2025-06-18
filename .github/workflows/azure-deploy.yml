@@ -15,28 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
+    - name: 🔄 Checkout repository
       uses: actions/checkout@v4
       
-    - name: Setup .NET
+    - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
-    - name: Restore dependencies
+    - name: 📦 Restore dependencies
       run: dotnet restore
       
-    - name: Build application
+    - name: 🏗️ Build application
       run: dotnet build --configuration Release --no-restore
       
-    - name: Run tests
+    - name: 🧪 Run tests
       run: dotnet test --no-restore --verbosity normal --configuration Release
       
-    - name: Publish application
+    - name: 📤 Publish application
       run: |
-        run: dotnet publish MVC/MVC.csproj --configuration Release --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        dotnet publish --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
         
-    - name: Deploy to Azure Web App
+    - name: 🚀 Deploy to Azure Web App
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
