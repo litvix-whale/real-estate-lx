@@ -16,7 +16,33 @@ namespace Infrastructure.Repositories
         {
             return await _context.RealEstateImages
                 .Where(image => image.RealEstateId == realEstateId)
+                .OrderBy(image => image.UiPriority)
                 .ToListAsync();
+        }
+
+        public async Task<RealEstateImage?> GetByRealEstateIdAndPriorityAsync(Guid realEstateId, int priority)
+        {
+            return await _context.RealEstateImages
+                .FirstOrDefaultAsync(i => i.RealEstateId == realEstateId && i.UiPriority == priority);
+        }
+
+        public async Task<int> GetMaxPriorityAsync(Guid realEstateId)
+        {
+            var images = await _context.RealEstateImages
+                .Where(i => i.RealEstateId == realEstateId)
+                .ToListAsync();
+
+            return images.Any() ? images.Max(i => i.UiPriority) : 0;
+        }
+
+        public async Task DeleteByRealEstateIdAsync(Guid realEstateId)
+        {
+            var images = await _context.RealEstateImages
+                .Where(i => i.RealEstateId == realEstateId)
+                .ToListAsync();
+
+            _context.RealEstateImages.RemoveRange(images);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -10,6 +10,8 @@ namespace Core.Interfaces
     public interface IRealEstateImageRepository : IRepository<RealEstateImage>
     {
         Task<IEnumerable<RealEstateImage>> GetImagesByRealEstateIdAsync(Guid realEstateId);
+        Task<RealEstateImage?> GetByRealEstateIdAndPriorityAsync(Guid realEstateId, int priority);
+        Task<int> GetMaxPriorityAsync(Guid realEstateId);
+        Task DeleteByRealEstateIdAsync(Guid realEstateId);
     }
-
 }

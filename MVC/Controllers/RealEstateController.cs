@@ -105,27 +105,28 @@ namespace MVC.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Create(RealEstate model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(RealEstate model, List<IFormFile>? images)
         {
             if (ModelState.IsValid)
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (Guid.TryParse(userId, out Guid userGuid))
-                {
-                    model.UserId = userGuid;
-                    var result = await _realEstateService.CreateRealEstateAsync(model);
-
-                    if (result == "Success")
-                    {
-                        return RedirectToAction("Index");
-                    }
-
-                    ModelState.AddModelError(string.Empty, result);
-                }
-                else
+                if (!Guid.TryParse(userId, out Guid userGuid))
                 {
                     ModelState.AddModelError(string.Empty, "User not authenticated");
+                    return View(model);
                 }
+
+                model.UserId = userGuid;
+                var (result, propertyId) = await _realEstateService.CreateRealEstateAsync(model, images);
+
+                if (result == "Success")
+                {
+                    TempData["SuccessMessage"] = "Property added successfully!";
+                    return RedirectToAction("Details", new { id = propertyId });
+                }
+
+                ModelState.AddModelError(string.Empty, result);
             }
 
             return View(model);
@@ -153,17 +154,19 @@ namespace MVC.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Edit(RealEstate model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(RealEstate model, List<IFormFile>? newImages, List<Guid>? removeImageIds)
         {
             if (ModelState.IsValid)
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (Guid.TryParse(userId, out Guid userGuid) && model.UserId == userGuid)
                 {
-                    var result = await _realEstateService.UpdateRealEstateAsync(model);
+                    var result = await _realEstateService.UpdateRealEstateAsync(model, newImages, removeImageIds);
 
                     if (result == "Success")
                     {
+                        TempData["SuccessMessage"] = "Property updated successfully!";
                         return RedirectToAction("Details", new { id = model.Id });
                     }
 
@@ -244,87 +247,6 @@ namespace MVC.Controllers
             return View(new CreateRealEstateViewModel());
         }
 
-        [HttpPost]
-        [Authorize]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateRealEstateViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (!Guid.TryParse(userId, out Guid userGuid))
-                {
-                    ModelState.AddModelError(string.Empty, "User not authenticated");
-                    return View(model);
-                }
-
-                // Create RealEstate entity
-                var realEstate = new RealEstate
-                {
-                    Title = model.Title,
-                    Description = model.Description,
-                    Category = model.Category,
-                    RealtyType = model.RealtyType,
-                    Deal = model.Deal,
-                    IsNewBuilding = model.IsNewBuilding,
-                    Country = model.Country,
-                    Region = model.Region,
-                    Locality = model.Locality,
-                    Borough = model.Borough ?? string.Empty,
-                    Street = model.Street,
-                    StreetType = model.StreetType ?? string.Empty,
-                    Latitude = model.Latitude,
-                    Longitude = model.Longitude,
-                    Floor = model.Floor,
-                    TotalFloors = model.TotalFloors,
-                    AreaTotal = model.AreaTotal,
-                    AreaLiving = model.AreaLiving,
-                    AreaKitchen = model.AreaKitchen,
-                    RoomCount = model.RoomCount,
-                    NewBuildingName = model.NewBuildingName,
-                    Price = model.Price,
-                    Currency = model.Currency,
-                    UserId = userGuid
-                };
-
-                // Handle image uploads
-                if (model.Images != null && model.Images.Any())
-                {
-                    var imageList = new List<RealEstateImage>();
-                    int priority = 1;
-
-                    foreach (var imageFile in model.Images)
-                    {
-                        if (imageFile.Length > 0)
-                        {
-                            var fileName = await SaveImageAsync(imageFile);
-                            if (!string.IsNullOrEmpty(fileName))
-                            {
-                                imageList.Add(new RealEstateImage
-                                {
-                                    Url = fileName,
-                                    UiPriority = priority++,
-                                    RealEstateId = realEstate.Id
-                                });
-                            }
-                        }
-                    }
-                    realEstate.Images = imageList;
-                }
-
-                var result = await _realEstateService.CreateRealEstateAsync(realEstate);
-
-                if (result == "Success")
-                {
-                    TempData["SuccessMessage"] = "Property added successfully!";
-                    return RedirectToAction("Details", new { id = realEstate.Id });
-                }
-
-                ModelState.AddModelError(string.Empty, result);
-            }
-
-            return View(model);
-        }
 
         private async Task<string?> SaveImageAsync(IFormFile imageFile)
         {

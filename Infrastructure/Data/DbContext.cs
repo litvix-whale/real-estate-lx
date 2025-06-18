@@ -34,4 +34,6 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     }
     public DbSet<RealEstate> RealEstates { get; set; }
     public DbSet<RealEstateImage> RealEstateImages { get; set; }
+
+
 }

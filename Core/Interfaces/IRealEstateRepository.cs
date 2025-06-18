@@ -16,5 +16,4 @@ namespace Core.Interfaces
         Task<IEnumerable<RealEstate>> GetByLocationAsync(string locality, string? region = null);
         Task<RealEstate?> GetByIdWithImagesAsync(Guid id);
     }
-
 }

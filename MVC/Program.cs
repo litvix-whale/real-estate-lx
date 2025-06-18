@@ -68,8 +68,11 @@ builder.Services.AddSignalR();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+
 builder.Services.AddScoped<IRealEstateRepository, RealEstateRepository>();
+builder.Services.AddScoped<IRealEstateImageRepository, RealEstateImageRepository>();
 builder.Services.AddScoped<IRealEstateService, RealEstateService>();
+builder.Services.AddScoped<IRealEstateImageService, RealEstateImageService>();
 
 builder.Services.AddHttpClient<IXmlDataService, XmlDataService>();
 builder.Services.AddScoped<IXmlDataService, XmlDataService>();
