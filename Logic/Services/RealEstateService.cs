@@ -70,44 +70,6 @@ namespace Logic.Services
             return await _realEstateRepository.GetByUserIdAsync(userId);
         }
 
-        public async Task<(string, Guid)> CreateRealEstateAsync(RealEstate realEstate, List<IFormFile>? images)
-        {
-            var realEstateId = Guid.NewGuid();
-            try
-            {
-                realEstate.Id = realEstateId;
-                realEstate.CreatedAt = DateTime.UtcNow;
-
-                // Валідація основних даних
-                var validationResult = ValidateRealEstate(realEstate);
-                if (validationResult != "Success")
-                {
-                    return (validationResult, Guid.Empty);
-                }
-
-                // Створити основний запис
-                await _realEstateRepository.AddAsync(realEstate);
-
-                // Обробити зображення якщо є
-                if (images != null && images.Any())
-                {
-                    var imageResult = await _imageService.AddImagesAsync(realEstateId, images);
-                    if (imageResult != "Success")
-                    {
-                        // Видалити створений запис якщо зображення не збереглися
-                        await _realEstateRepository.DeleteAsync(realEstateId);
-                        return ($"Property created but failed to save images: {imageResult}", Guid.Empty);
-                    }
-                }
-
-                return ("Success", realEstateId);
-            }
-            catch (Exception ex)
-            {
-                return ($"Failed to create property. Error: {ex.Message}", Guid.Empty);
-            }
-        }
-
         public async Task<string> UpdateRealEstateAsync(RealEstate realEstate, List<IFormFile>? newImages, List<Guid>? removeImageIds)
         {
             try

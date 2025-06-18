@@ -18,7 +18,7 @@ namespace Core.Interfaces
         Task<RealEstate?> GetRealEstateWithImagesAsync(Guid id);
 
         // Оновлені методи з обробкою файлів
-        Task<(string, Guid)> CreateRealEstateAsync(RealEstate realEstate, List<IFormFile>? images);
+        Task<string> CreateRealEstateAsync(RealEstate realEstate);
         Task<string> UpdateRealEstateAsync(RealEstate realEstate, List<IFormFile>? newImages, List<Guid>? removeImageIds);
         Task<string> DeleteRealEstateAsync(Guid id);
 

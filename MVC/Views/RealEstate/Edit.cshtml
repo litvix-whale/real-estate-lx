@@ -1,0 +1,208 @@
+﻿@using Core.Enums
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Core.Entities.RealEstate
+
+@{
+    ViewData["Title"] = "Edit Property";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil me-2"></i>Edit Property
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <input asp-for="Id" type="hidden" />
+                        <input asp-for="UserId" type="hidden" />
+                        <input asp-for="CreatedAt" type="hidden" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- Existing Images -->
+                        @if (Model.Images.Any())
+                        {
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary mb-3">
+                                        <i class="bi bi-images me-2"></i>Current Images
+                                    </h5>
+                                    <div class="row" id="existingImages">
+                                        @foreach (var image in Model.Images.OrderBy(i => i.UiPriority))
+                                        {
+                                            <div class="col-md-3 mb-3" data-image-id="@image.Id">
+                                                <div class="card">
+                                                    <img src="@image.Url" class="card-img-top"
+                                                         style="height: 150px; object-fit: cover;" alt="Property image">
+                                                    <div class="card-body p-2">
+                                                        <div class="form-check">
+                                                            <input type="checkbox" name="removeImageIds"
+                                                                   value="@image.Id" class="form-check-input remove-image-checkbox">
+                                                            <label class="form-check-label text-danger">
+                                                                <small>Remove</small>
+                                                            </label>
+                                                        </div>
+                                                        <small class="text-muted">Priority: @image.UiPriority</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Add New Images -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-plus-circle me-2"></i>Add New Images
+                                </h5>
+                                <div class="mb-3">
+                                    <input type="file" name="newImages" class="form-control" multiple accept="image/*"
+                                           id="newImageInput" />
+                                    <div class="form-text">
+                                        Add new images (JPEG, PNG, GIF, WebP). Maximum 5MB per image.
+                                    </div>
+                                </div>
+
+                                <!-- New Image Preview -->
+                                <div id="newImagePreview" class="row"></div>
+                            </div>
+                        </div>
+
+                        <!-- Property Information (Same as Create form, but with existing values) -->
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle me-2"></i>Basic Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
+                                <input asp-for="Title" class="form-control" />
+                                <span asp-validation-for="Title" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Category" class="form-label">Category <span class="text-danger">*</span></label>
+                                <select asp-for="Category" class="form-select">
+                                    @foreach (var category in Enum.GetValues<RealEstateCategoryEnum>())
+                                    {
+                                        <option value="@category" selected="@(Model.Category == category)">@category</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Category" class="text-danger"></span>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label asp-for="Description" class="form-label">Description <span class="text-danger">*</span></label>
+                                <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                                <span asp-validation-for="Description" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Property Details (Similar structure to Create) -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-house me-2"></i>Property Details
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="RealtyType" class="form-label">Property Type <span class="text-danger">*</span></label>
+                                <select asp-for="RealtyType" class="form-select">
+                                    @foreach (var type in Enum.GetValues<RealEstateTypeEnum>())
+                                    {
+                                        <option value="@type" selected="@(Model.RealtyType == type)">@type</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="RealtyType" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Deal" class="form-label">Deal Type <span class="text-danger">*</span></label>
+                                <select asp-for="Deal" class="form-select">
+                                    @foreach (var deal in Enum.GetValues<DealTypeEnum>())
+                                    {
+                                        <option value="@deal" selected="@(Model.Deal == deal)">@deal</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Deal" class="text-danger"></span>
+                            </div>
+                            <!-- Continue with all other fields... -->
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="bi bi-check-circle me-2"></i>Update Property
+                                    </button>
+                                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>Cancel
+                                    </a>
+                                    <a asp-action="Index" class="btn btn-outline-primary">
+                                        <i class="bi bi-list me-2"></i>Back to Listings
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Mark images for removal
+        document.querySelectorAll('.remove-image-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const imageCard = this.closest('.card');
+                if (this.checked) {
+                    imageCard.style.opacity = '0.5';
+                    imageCard.style.border = '2px solid #dc3545';
+                } else {
+                    imageCard.style.opacity = '1';
+                    imageCard.style.border = '';
+                }
+            });
+        });
+
+        // New image preview (same as create form)
+        document.getElementById('newImageInput').addEventListener('change', function() {
+            const preview = document.getElementById('newImagePreview');
+            preview.innerHTML = '';
+
+            if (this.files) {
+                Array.from(this.files).forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const col = document.createElement('div');
+                            col.className = 'col-md-3 mb-3';
+                            col.innerHTML = `
+                                <div class="card border-success">
+                                    <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="New image">
+                                    <div class="card-body p-2">
+                                        <small class="text-success">New Image ${index + 1}</small>
+                                    </div>
+                                </div>
+                            `;
+                            preview.appendChild(col);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        });
+    </script>
+}

@@ -106,7 +106,7 @@ namespace MVC.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(RealEstate model, List<IFormFile>? images)
+        public async Task<IActionResult> Create(CreateRealEstateViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -117,19 +117,106 @@ namespace MVC.Controllers
                     return View(model);
                 }
 
-                model.UserId = userGuid;
-                var (result, propertyId) = await _realEstateService.CreateRealEstateAsync(model, images);
+                // Конвертуємо ViewModel в Entity
+                var realEstate = new RealEstate
+                {
+                    Title = model.Title,
+                    Description = model.Description,
+                    Category = model.Category,
+                    RealtyType = model.RealtyType,
+                    Deal = model.Deal,
+                    IsNewBuilding = model.IsNewBuilding,
+                    Country = model.Country,
+                    Region = model.Region,
+                    Locality = model.Locality,
+                    Borough = model.Borough ?? string.Empty,
+                    Street = model.Street,
+                    StreetType = model.StreetType ?? string.Empty,
+                    Latitude = model.Latitude,
+                    Longitude = model.Longitude,
+                    Floor = model.Floor,
+                    TotalFloors = model.TotalFloors,
+                    AreaTotal = model.AreaTotal,
+                    AreaLiving = model.AreaLiving,
+                    AreaKitchen = model.AreaKitchen,
+                    RoomCount = model.RoomCount,
+                    NewBuildingName = model.NewBuildingName,
+                    Price = model.Price,
+                    Currency = model.Currency,
+                    UserId = userGuid
+                };
+
+                // ✅ ОБРОБКА ЗОБРАЖЕНЬ (файлова система + URL в БД)
+                if (model.Images != null && model.Images.Any())
+                {
+                    var imageList = new List<RealEstateImage>();
+                    int priority = 1;
+
+                    foreach (var imageFile in model.Images)
+                    {
+                        if (imageFile.Length > 0)
+                        {
+                            // Валідація зображення
+                            var validationResult = ValidateImage(imageFile);
+                            if (!validationResult.IsValid)
+                            {
+                                ModelState.AddModelError(string.Empty, validationResult.ErrorMessage);
+                                return View(model);
+                            }
+
+                            // Зберегти файл і отримати URL
+                            var fileName = await SaveImageAsync(imageFile);
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                imageList.Add(new RealEstateImage
+                                {
+                                    Url = fileName, // ✅ URL шлях до файлу
+                                    UiPriority = priority++,
+                                    RealEstateId = realEstate.Id
+                                });
+                            }
+                        }
+                    }
+                    realEstate.Images = imageList;
+                }
+
+                var result = await _realEstateService.CreateRealEstateAsync(realEstate);
 
                 if (result == "Success")
                 {
                     TempData["SuccessMessage"] = "Property added successfully!";
-                    return RedirectToAction("Details", new { id = propertyId });
+                    return RedirectToAction("Details", new { id = realEstate.Id });
                 }
 
                 ModelState.AddModelError(string.Empty, result);
             }
 
             return View(model);
+        }
+
+        private (bool IsValid, string ErrorMessage) ValidateImage(IFormFile file)
+        {
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (file.Length > maxFileSize)
+            {
+                return (false, "Image size exceeds maximum limit of 5MB.");
+            }
+
+            var allowedImageTypes = new[]
+            {
+                "image/jpeg",
+                "image/jpg",
+                "image/png",
+                "image/gif",
+                "image/webp"
+            };
+
+            if (!allowedImageTypes.Contains(file.ContentType))
+            {
+                return (false, "Invalid image type. Only JPEG, PNG, GIF, and WebP are allowed.");
+            }
+
+            return (true, string.Empty);
         }
 
         [HttpGet]
