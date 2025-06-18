@@ -28,8 +28,18 @@
                         {
 	                        @if (User.IsInRole("Admin"))
 	                        {
-		                        <li class="nav-item">
-			                        <a class="nav-link" asp-controller="User" asp-action="Users">Users</a>
+		                        <li class="nav-item dropdown">
+			                        <a class="nav-link dropdown-toggle text-danger" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+				                        <i class="bi bi-shield-check me-1"></i>Admin
+			                        </a>
+			                        <ul class="dropdown-menu">
+				                        <li><a class="dropdown-item" asp-controller="RealEstate" asp-action="AdminIndex">
+					                        <i class="bi bi-house me-2"></i>Manage Properties
+				                        </a></li>
+				                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users">
+					                        <i class="bi bi-people me-2"></i>Manage Users
+				                        </a></li>
+			                        </ul>
 		                        </li>
 	                        }
 

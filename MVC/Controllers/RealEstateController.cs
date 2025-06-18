@@ -13,7 +13,7 @@ namespace MVC.Controllers
     public class RealEstateController(IRealEstateService realEstateService, IGoogleMapsService googleMapsService, IRealEstateImageRepository realEstateImageRepository) : Controller
     {
         private readonly IRealEstateService _realEstateService = realEstateService;
-        private readonly IGoogleMapsService _googleMapsService= googleMapsService;
+        private readonly IGoogleMapsService _googleMapsService = googleMapsService;
         private readonly IRealEstateImageRepository _realEstateImageRepository = realEstateImageRepository;
 
         [HttpGet]
@@ -405,6 +405,7 @@ namespace MVC.Controllers
 
         [HttpPost]
         [Authorize]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id)
         {
             var realEstate = await _realEstateService.GetRealEstateByIdAsync(id);
@@ -414,8 +415,11 @@ namespace MVC.Controllers
                 return NotFound();
             }
 
+            // ✅ Перевірити права: власник або admin
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!Guid.TryParse(userId, out Guid userGuid) || realEstate.UserId != userGuid)
+            var isAdmin = User.IsInRole("Admin");
+
+            if (!Guid.TryParse(userId, out Guid userGuid) || (realEstate.UserId != userGuid && !isAdmin))
             {
                 return Forbid();
             }
@@ -424,6 +428,14 @@ namespace MVC.Controllers
 
             if (result == "Success")
             {
+                TempData["SuccessMessage"] = "Property deleted successfully!";
+
+                // ✅ Перенаправити залежно від ролі
+                if (isAdmin && Request.Headers.Referer.ToString().Contains("Admin"))
+                {
+                    return RedirectToAction("AdminIndex");
+                }
+
                 return RedirectToAction("Index");
             }
 
@@ -495,6 +507,228 @@ namespace MVC.Controllers
             {
                 return null;
             }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminIndex(string? searchQuery = "",
+    RealEstateCategoryEnum? category = null,
+    RealEstateTypeEnum? realtyType = null,
+    DealTypeEnum? deal = null,
+    bool? isNewBuilding = null,
+    string? locality = "",
+    string? region = "",
+    int? minPrice = null,
+    int? maxPrice = null,
+    CurrencyEnum? currency = null,
+    int? minRoomCount = null,
+    int? maxRoomCount = null,
+    float? minAreaTotal = null,
+    float? maxAreaTotal = null,
+    string sortOrder = "date_desc",
+    int page = 1,
+    int pageSize = 12)
+        {
+            var criteria = new RealEstateSearchCriteria
+            {
+                SearchQuery = searchQuery,
+                Category = category,
+                RealtyType = realtyType,
+                Deal = deal,
+                IsNewBuilding = isNewBuilding,
+                Locality = locality,
+                Region = region,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice,
+                Currency = currency,
+                MinRoomCount = minRoomCount,
+                MaxRoomCount = maxRoomCount,
+                MinAreaTotal = minAreaTotal,
+                MaxAreaTotal = maxAreaTotal,
+                SortBy = GetSortField(sortOrder),
+                SortDescending = GetSortDirection(sortOrder),
+                Skip = (page - 1) * pageSize,
+                Take = pageSize
+            };
+
+            var realEstates = await _realEstateService.SearchRealEstateAsync(criteria);
+            var totalItems = await _realEstateService.GetSearchCountAsync(criteria);
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
+
+            var model = new RealEstateSearchViewModel
+            {
+                SearchQuery = searchQuery,
+                Category = category,
+                RealtyType = realtyType,
+                Deal = deal,
+                IsNewBuilding = isNewBuilding,
+                Locality = locality,
+                Region = region,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice,
+                Currency = currency,
+                MinRoomCount = minRoomCount,
+                MaxRoomCount = maxRoomCount,
+                MinAreaTotal = minAreaTotal,
+                MaxAreaTotal = maxAreaTotal,
+                SortOrder = sortOrder,
+                Page = page,
+                PageSize = pageSize,
+                RealEstates = realEstates,
+                TotalPages = totalPages,
+                TotalItems = totalItems
+            };
+
+            return View(model);
+        }
+
+        // ✅ ADMIN: Видалити будь-який об'єкт
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdminDelete(Guid id)
+        {
+            var realEstate = await _realEstateService.GetRealEstateByIdAsync(id);
+
+            if (realEstate == null)
+            {
+                TempData["ErrorMessage"] = "Property not found.";
+                return RedirectToAction("AdminIndex");
+            }
+
+            var result = await _realEstateService.DeleteRealEstateAsync(id);
+
+            if (result == "Success")
+            {
+                TempData["SuccessMessage"] = $"Property '{realEstate.Title}' has been deleted successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Failed to delete property: {result}";
+            }
+
+            return RedirectToAction("AdminIndex");
+        }
+
+        // ✅ ADMIN: Редагувати будь-який об'єкт
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminEdit(Guid id)
+        {
+            var realEstate = await _realEstateService.GetRealEstateWithImagesAsync(id);
+
+            if (realEstate == null)
+            {
+                return NotFound();
+            }
+
+            // ✅ Конвертувати в ViewModel (як у звичайному Edit)
+            var model = new RealEstateViewCreateModel
+            {
+                Id = realEstate.Id,
+                UserId = realEstate.UserId,
+                CreatedAt = realEstate.CreatedAt,
+                UpdatedAt = realEstate.UpdatedAt,
+                Title = realEstate.Title,
+                Description = realEstate.Description,
+                Category = realEstate.Category,
+                RealtyType = realEstate.RealtyType,
+                Deal = realEstate.Deal,
+                IsNewBuilding = realEstate.IsNewBuilding,
+                Country = realEstate.Country,
+                Region = realEstate.Region,
+                Locality = realEstate.Locality,
+                Borough = realEstate.Borough,
+                Street = realEstate.Street,
+                StreetType = realEstate.StreetType,
+                Latitude = realEstate.Latitude,
+                Longitude = realEstate.Longitude,
+                Floor = realEstate.Floor,
+                TotalFloors = realEstate.TotalFloors,
+                AreaTotal = (float)realEstate.AreaTotal,
+                AreaLiving = (float?)realEstate.AreaLiving,
+                AreaKitchen = (float?)realEstate.AreaKitchen,
+                RoomCount = realEstate.RoomCount,
+                NewBuildingName = realEstate.NewBuildingName,
+                Price = realEstate.Price,
+                Currency = realEstate.Currency,
+                ExistingImages = realEstate.Images?.ToList() ?? new List<RealEstateImage>()
+            };
+
+            ViewBag.IsAdminEdit = true; // Позначити що це admin edit
+            return View("Edit", model); // Використовувати ту ж саму View
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdminEdit(RealEstateViewCreateModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var realEstate = new RealEstate
+                    {
+                        Id = model.Id ?? Guid.Empty,
+                        UserId = model.UserId ?? Guid.Empty,
+                        CreatedAt = model.CreatedAt ?? DateTime.UtcNow,
+                        UpdatedAt = model.UpdatedAt,
+                        Title = model.Title,
+                        Description = model.Description,
+                        Category = model.Category,
+                        RealtyType = model.RealtyType,
+                        Deal = model.Deal,
+                        IsNewBuilding = model.IsNewBuilding,
+                        Country = model.Country,
+                        Region = model.Region,
+                        Locality = model.Locality,
+                        Borough = model.Borough ?? string.Empty,
+                        Street = model.Street,
+                        StreetType = model.StreetType ?? string.Empty,
+                        Latitude = model.Latitude,
+                        Longitude = model.Longitude,
+                        Floor = model.Floor,
+                        TotalFloors = model.TotalFloors,
+                        AreaTotal = model.AreaTotal,
+                        AreaLiving = model.AreaLiving,
+                        AreaKitchen = model.AreaKitchen,
+                        RoomCount = model.RoomCount,
+                        NewBuildingName = model.NewBuildingName,
+                        Price = model.Price,
+                        Currency = model.Currency
+                    };
+
+                    var result = await _realEstateService.UpdateRealEstateAsync(realEstate, model.NewImages, model.RemoveImageIds);
+
+                    if (result == "Success")
+                    {
+                        TempData["SuccessMessage"] = "Property updated successfully by Admin!";
+                        return RedirectToAction("AdminIndex");
+                    }
+
+                    ModelState.AddModelError(string.Empty, result);
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError(string.Empty, $"Error updating property: {ex.Message}");
+                }
+            }
+
+            // Перезавантажити зображення при помилці
+            if (model.Id.HasValue)
+            {
+                var realEstateWithImages = await _realEstateService.GetRealEstateWithImagesAsync(model.Id.Value);
+                if (realEstateWithImages?.Images != null)
+                {
+                    model.ExistingImages = realEstateWithImages.Images.ToList();
+                }
+            }
+
+            ViewBag.IsAdminEdit = true;
+            return View("Edit", model);
         }
     }
 }

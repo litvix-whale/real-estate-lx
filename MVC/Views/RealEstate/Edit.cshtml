@@ -260,9 +260,18 @@
                                     <button type="submit" class="btn btn-warning">
                                         <i class="bi bi-check-circle me-2"></i>Update Property
                                     </button>
-                                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
-                                        <i class="bi bi-arrow-left me-2"></i>Cancel
-                                    </a>
+                                    @if (ViewBag.IsAdminEdit == true)
+                                    {
+	                                    <a asp-action="AdminIndex" class="btn btn-outline-danger">
+		                                    <i class="bi bi-arrow-left me-2"></i>Back to Admin
+	                                    </a>
+                                    }
+                                    else
+                                    {
+	                                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+		                                    <i class="bi bi-arrow-left me-2"></i>Cancel
+	                                    </a>
+                                    }
                                     <a asp-action="Index" class="btn btn-outline-primary">
                                         <i class="bi bi-list me-2"></i>Back to Listings
                                     </a>
