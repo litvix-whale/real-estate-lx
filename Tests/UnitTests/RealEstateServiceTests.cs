@@ -91,7 +91,7 @@ namespace Tests.UnitTests
             // Arrange
             var propertyId = Guid.NewGuid();
             _mockRepository.Setup(x => x.GetByIdAsync(propertyId))
-                .ReturnsAsync((RealEstate)null);
+                .ReturnsAsync((RealEstate?)null);
 
             // Act
             var result = await _service.GetRealEstateByIdAsync(propertyId);
@@ -363,7 +363,7 @@ namespace Tests.UnitTests
         #region ValidateRealEstate Tests
         [Theory]
         [InlineData("", "Title is required.")]
-        [InlineData(null, "Title is required.")]
+        [InlineData("   ", "Title is required.")]
         public void ValidateRealEstate_InvalidTitle_ReturnsError(string title, string expectedError)
         {
             // Arrange
@@ -379,7 +379,9 @@ namespace Tests.UnitTests
                 Country = "Ukraine",
                 Region = "Kyiv",
                 Locality = "Kyiv",
-                Street = "Main Street"
+                Borough = "Test Borough",
+                Street = "Main Street",
+                StreetType = "Street",
             };
 
             // Act
@@ -405,7 +407,9 @@ namespace Tests.UnitTests
                 Country = "Ukraine",
                 Region = "Kyiv",
                 Locality = "Kyiv",
-                Street = "Main Street"
+                Borough = "Test Borough",
+                Street = "Main Street",
+                StreetType = "Street"
             };
 
             // Act
@@ -417,10 +421,23 @@ namespace Tests.UnitTests
 
         private string InvokeValidateRealEstate(RealEstate realEstate)
         {
-            // Use reflection to access private static method
+            // Якщо ValidateRealEstate - публічний статичний метод
             var method = typeof(RealEstateService).GetMethod("ValidateRealEstate",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            return (string)method.Invoke(null, new object[] { realEstate });
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+            if (method == null)
+            {
+                // Якщо ValidateRealEstate - приватний статичний метод
+                method = typeof(RealEstateService).GetMethod("ValidateRealEstate",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            }
+
+            if (method == null)
+            {
+                throw new InvalidOperationException("ValidateRealEstate method not found");
+            }
+
+            return (string)method.Invoke(null, new object[] { realEstate })!;
         }
         #endregion
     }

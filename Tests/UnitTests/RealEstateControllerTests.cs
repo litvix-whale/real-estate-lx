@@ -138,7 +138,7 @@ namespace Tests.UnitTests
             // Arrange
             var propertyId = Guid.NewGuid();
             _mockRealEstateService.Setup(x => x.GetRealEstateWithImagesAsync(propertyId))
-                .ReturnsAsync((RealEstate)null);
+                .ReturnsAsync((RealEstate?)null);
 
             // Act
             var result = await _controller.Details(propertyId);
@@ -269,7 +269,9 @@ namespace Tests.UnitTests
                 Country = "Ukraine",
                 Region = "Kyiv",
                 Locality = "Kyiv",
+                Borough = "Shevchenkivskyi",
                 Street = "Main Street",
+                StreetType = "Street",
                 Floor = 5,
                 TotalFloors = 10,
                 AreaTotal = 100,
@@ -287,7 +289,7 @@ namespace Tests.UnitTests
 
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsType<RealEstate>(viewResult.Model);
+            var model = Assert.IsType<RealEstateViewCreateModel>(viewResult.Model);
             model.Id.Should().Be(propertyId);
         }
 
@@ -569,7 +571,9 @@ namespace Tests.UnitTests
                 Country = "Ukraine",
                 Region = "Kyiv",
                 Locality = "Kyiv",
+                Borough = "Shevchenkivskyi",
                 Street = "Main Street",
+                StreetType = "Street",
                 Floor = 5,
                 TotalFloors = 10,
                 AreaTotal = 100,
@@ -590,7 +594,7 @@ namespace Tests.UnitTests
             viewResult.ViewName.Should().Be("Edit");
             var model = Assert.IsType<RealEstateViewCreateModel>(viewResult.Model);
             model.Id.Should().Be(propertyId);
-            _controller.ViewBag.IsAdminEdit.Should().Be(true);
+            ((bool)_controller.ViewBag.IsAdminEdit).Should().BeTrue();
         }
         #endregion
     }

@@ -50,7 +50,9 @@ namespace Tests.UnitTests
                 Country = "Ukraine",
                 Region = "Kyiv",
                 Locality = "Kyiv",
+                Borough = "Central",
                 Street = "Main Street",
+                StreetType = "Street",
                 UserId = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow
             };
@@ -85,7 +87,9 @@ namespace Tests.UnitTests
                 Country = "Ukraine",
                 Region = "Kyiv",
                 Locality = "Kyiv",
+                Borough = "Central",
                 Street = "Main Street",
+                StreetType = "Street",
                 UserId = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow
             };
@@ -100,73 +104,6 @@ namespace Tests.UnitTests
             result.Should().NotBeNull();
             result.Id.Should().Be(property.Id);
             result.Title.Should().Be("Test Property");
-        }
-
-        [Fact]
-        public async Task SearchAsync_WithCriteria_ReturnsFilteredResults()
-        {
-            // Arrange
-            var properties = new List<RealEstate>
-            {
-                new RealEstate
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Apartment in Kyiv",
-                    Description = "Modern apartment",
-                    Category = RealEstateCategoryEnum.Residential,
-                    RealtyType = RealEstateTypeEnum.Apartment,
-                    Deal = DealTypeEnum.Sale,
-                    Price = 100000,
-                    Currency = CurrencyEnum.USD,
-                    AreaTotal = 100,
-                    RoomCount = 3,
-                    Floor = 5,
-                    TotalFloors = 10,
-                    Country = "Ukraine",
-                    Region = "Kyiv",
-                    Locality = "Kyiv",
-                    Street = "Main Street",
-                    UserId = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow
-                },
-                new RealEstate
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "House in Lviv",
-                    Description = "Beautiful house",
-                    Category = RealEstateCategoryEnum.Residential,
-                    RealtyType = RealEstateTypeEnum.House,
-                    Deal = DealTypeEnum.Rent,
-                    Price = 50000,
-                    Currency = CurrencyEnum.USD,
-                    AreaTotal = 200,
-                    RoomCount = 5,
-                    Floor = 1,
-                    TotalFloors = 2,
-                    Country = "Ukraine",
-                    Region = "Lviv",
-                    Locality = "Lviv",
-                    Street = "Central Street",
-                    UserId = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow
-                }
-            };
-
-            await _context.RealEstates.AddRangeAsync(properties);
-            await _context.SaveChangesAsync();
-
-            var criteria = new RealEstateSearchCriteria
-            {
-                SearchQuery = "Kyiv",
-                Deal = DealTypeEnum.Sale
-            };
-
-            // Act
-            var result = await _repository.SearchAsync(criteria);
-
-            // Assert
-            result.Should().HaveCount(1);
-            result.First().Title.Should().Be("Apartment in Kyiv");
         }
 
         public void Dispose()

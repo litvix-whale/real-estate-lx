@@ -279,15 +279,8 @@ namespace MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(RealEstateViewCreateModel model)
         {
-            Console.WriteLine($"=== EDIT DEBUG START ===");
-            Console.WriteLine($"Model ID: {model.Id}");
-            Console.WriteLine($"Model Title: {model.Title}");
-            Console.WriteLine($"Model Price: {model.Price}");
-            Console.WriteLine($"ModelState.IsValid: {ModelState.IsValid}");
-
             if (!ModelState.IsValid)
             {
-                Console.WriteLine("=== MODEL STATE ERRORS ===");
                 foreach (var error in ModelState)
                 {
                     Console.WriteLine($"{error.Key}: {string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage))}");

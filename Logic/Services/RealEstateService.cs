@@ -102,12 +102,6 @@ namespace Logic.Services
                 await _realEstateRepository.UpdateAsync(existingProperty);
                 Console.WriteLine("Repository.UpdateAsync completed");
 
-                // 4. Обробка зображень...
-                Console.WriteLine($"=== PROCESSING IMAGES ===");
-                Console.WriteLine($"Remove IDs: {removeImageIds?.Count ?? 0}");
-                Console.WriteLine($"New Images: {newImages?.Count ?? 0}");
-
-
                 if (removeImageIds != null && removeImageIds.Any())
                 {
                     foreach (var imageId in removeImageIds)
