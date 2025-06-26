@@ -59,19 +59,6 @@ public class UserRepository(AppDbContext context, UserManager<User> userManager)
                 u.Email != null && u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (!string.IsNullOrEmpty(statusFilter))
-        {
-            switch (statusFilter.ToLower())
-            {
-                case "active":
-                    query = query.Where(u => !u.BannedTo.HasValue || u.BannedTo < DateTime.UtcNow);
-                    break;
-                case "banned":
-                    query = query.Where(u => u.BannedTo.HasValue && u.BannedTo > DateTime.UtcNow);
-                    break;
-            }
-        }
-
         query = sortOrder switch
         {
             "username_asc" => query.OrderBy(u => u.UserName),
@@ -106,30 +93,6 @@ public class UserRepository(AppDbContext context, UserManager<User> userManager)
                 u.Email != null && u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (!string.IsNullOrEmpty(statusFilter))
-        {
-            switch (statusFilter.ToLower())
-            {
-                case "active":
-                    query = query.Where(u => !u.BannedTo.HasValue || u.BannedTo < DateTime.UtcNow);
-                    break;
-                case "banned":
-                    query = query.Where(u => u.BannedTo.HasValue && u.BannedTo > DateTime.UtcNow);
-                    break;
-            }
-        }
-
         return query.Count();
-    }
-
-    public async Task<string> BanUserAsync(User user, DateTime? bannedTo)
-    {
-        if (bannedTo == null)
-        {
-            return "BannedTo is required";
-        }
-        user.BannedTo = bannedTo;
-        await _userManager.UpdateAsync(user);
-        return "Success";
     }
 }

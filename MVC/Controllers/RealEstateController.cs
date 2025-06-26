@@ -148,7 +148,6 @@ namespace MVC.Controllers
                     UserId = userGuid
                 };
 
-                // ✅ ОБРОБКА ЗОБРАЖЕНЬ (файлова система + URL в БД)
                 if (model.Images != null && model.Images.Any())
                 {
                     var imageList = new List<RealEstateImage>();
@@ -172,7 +171,7 @@ namespace MVC.Controllers
                             {
                                 imageList.Add(new RealEstateImage
                                 {
-                                    Url = fileName, // ✅ URL шлях до файлу
+                                    Url = fileName,
                                     UiPriority = priority++,
                                     RealEstateId = realEstate.Id
                                 });
@@ -238,7 +237,6 @@ namespace MVC.Controllers
                 return Forbid();
             }
 
-            // ✅ Конвертувати RealEstate в RealEstateViewCreateModel
             var model = new RealEstateViewCreateModel
             {
                 Id = realEstate.Id,
@@ -298,7 +296,6 @@ namespace MVC.Controllers
 
                 try
                 {
-                    // ✅ Конвертувати RealEstateViewCreateModel в RealEstate
                     var realEstate = new RealEstate
                     {
                         Id = model.Id ?? Guid.Empty,
@@ -408,7 +405,6 @@ namespace MVC.Controllers
                 return NotFound();
             }
 
-            // ✅ Перевірити права: власник або admin
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var isAdmin = User.IsInRole("Admin");
 
@@ -423,7 +419,6 @@ namespace MVC.Controllers
             {
                 TempData["SuccessMessage"] = "Property deleted successfully!";
 
-                // ✅ Перенаправити залежно від ролі
                 if (isAdmin && Request.Headers.Referer.ToString().Contains("Admin"))
                 {
                     return RedirectToAction("AdminIndex");
@@ -633,8 +628,8 @@ namespace MVC.Controllers
                 ExistingImages = realEstate.Images?.ToList() ?? new List<RealEstateImage>()
             };
 
-            ViewBag.IsAdminEdit = true; // Позначити що це admin edit
-            return View("Edit", model); // Використовувати ту ж саму View
+            ViewBag.IsAdminEdit = true;
+            return View("Edit", model);
         }
 
         [HttpPost]
