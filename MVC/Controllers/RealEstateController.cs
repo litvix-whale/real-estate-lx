@@ -688,7 +688,6 @@ namespace MVC.Controllers
                 }
             }
 
-            // Перезавантажити зображення при помилці
             if (model.Id.HasValue)
             {
                 var realEstateWithImages = await _realEstateService.GetRealEstateWithImagesAsync(model.Id.Value);

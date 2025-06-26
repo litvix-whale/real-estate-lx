@@ -85,18 +85,6 @@ namespace MVC.Controllers
                     u.Email != null && u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
             }
 
-            switch (filter.ToLower())
-            {
-                case "active":
-                    filteredUsers = filteredUsers.Where(u => !u.BannedTo.HasValue || u.BannedTo < DateTime.UtcNow);
-                    break;
-                case "banned":
-                    filteredUsers = filteredUsers.Where(u => u.BannedTo.HasValue && u.BannedTo > DateTime.UtcNow);
-                    break;
-                default: // "all"
-                    break;
-            }
-
             filteredUsers = sortOrder switch
             {
                 "username_asc" => filteredUsers.OrderBy(u => u.UserName),
