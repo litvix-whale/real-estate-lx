@@ -99,28 +99,6 @@ namespace Logic.Services
             return await userRepository.GetByUserNameAsync(userName) ?? throw new InvalidOperationException("User not found.");
         }
 
-        public async Task<string> BanUserAsync(string email, DateTime? bannedTo)
-        {
-            var user = await userRepository.GetByUserNameAsync(email);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-            bannedTo = bannedTo?.ToUniversalTime();
-            return await userRepository.BanUserAsync(user, bannedTo);
-        }
-
-        public async Task<string> UnbanUserAsync(string email)
-        {
-            var user = await userRepository.GetByUserNameAsync(email);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-            user.BannedTo = null;
-            await userRepository.UpdateAsync(user);
-            return "Success";
-        }
         public async Task AddClaimsAsync(User user, IEnumerable<Claim> claims)
         {
             if (user == null)
@@ -264,20 +242,6 @@ namespace Logic.Services
                 return "User not found.";
             }
             return user.Id.ToString();
-        }
-
-        public string? GetBannedTo(Guid userId)
-        {
-            var user = userRepository.GetByIdAsync(userId).Result;
-            if (user == null)
-            {
-                return null;
-            }
-            if (user.BannedTo == null)
-            {
-                return null;
-            }
-            return user.BannedTo.Value.ToString("yyyy-MM-dd HH:mm:ss");
         }
 
         public async Task<bool> IsUserAdmin(string userName)

@@ -10,9 +10,6 @@ public interface IUserService
     Task<string> DeleteUserAsync(string email);
     Task<User> GetUserByEmailAsync(string email);
     Task<User> GetUserByUserNameAsync(string userName);
-    Task<string> BanUserAsync(string email, DateTime? bannedTo);
-    Task<string> UnbanUserAsync(string email);
-    string? GetBannedTo(Guid userId);
     Task<IEnumerable<User>> GetUsersByRoleAsync(string role, string? searchTerm = null,
     string? statusFilter = null, string? sortOrder = null, int? skip = null, int? take = null);
     Task<int> GetUsersCountByRoleAsync(string role, string? searchTerm = null, string? statusFilter = null);

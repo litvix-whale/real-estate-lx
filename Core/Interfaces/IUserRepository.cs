@@ -12,6 +12,5 @@ public interface IUserRepository : IRepository<User>
     Task<int> GetUsersCountByRoleAsync(string role, string? searchTerm = null, string? statusFilter = null);
     Task<IdentityResult> AddAsync(User user, string password);
     Task<IdentityResult> UpdateAsync(User user, string password);
-    Task<string> BanUserAsync(User user, DateTime? bannedTo);
     Task<string> DeleteAsync(User user);
 }
