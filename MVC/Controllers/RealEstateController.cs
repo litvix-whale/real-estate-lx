@@ -563,7 +563,6 @@ namespace MVC.Controllers
             return View(model);
         }
 
-        // ✅ ADMIN: Видалити будь-який об'єкт
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
@@ -591,7 +590,6 @@ namespace MVC.Controllers
             return RedirectToAction("AdminIndex");
         }
 
-        // ✅ ADMIN: Редагувати будь-який об'єкт
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminEdit(Guid id)
@@ -603,7 +601,6 @@ namespace MVC.Controllers
                 return NotFound();
             }
 
-            // ✅ Конвертувати в ViewModel (як у звичайному Edit)
             var model = new RealEstateViewCreateModel
             {
                 Id = realEstate.Id,
@@ -696,7 +693,6 @@ namespace MVC.Controllers
                 }
             }
 
-            // Перезавантажити зображення при помилці
             if (model.Id.HasValue)
             {
                 var realEstateWithImages = await _realEstateService.GetRealEstateWithImagesAsync(model.Id.Value);
@@ -736,10 +732,9 @@ namespace MVC.Controllers
                 return Forbid();
             }
 
-            // ✅ Створити критерії пошуку тільки для поточного користувача
             var criteria = new RealEstateSearchCriteria
             {
-                UserId = userGuid, // ✅ ВАЖЛИВО: Фільтрувати тільки по поточному користувачу
+                UserId = userGuid,
                 SearchQuery = searchQuery,
                 Category = category,
                 RealtyType = realtyType,
